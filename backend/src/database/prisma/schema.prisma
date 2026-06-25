@@ -100,7 +100,7 @@ model Client {
   activationCode  String       @unique @map("activation_code") @db.VarChar(64)
   maxAgents       Int          @default(5) @map("max_agents")
   maxPrinters     Int          @default(100) @map("max_printers")
-  settings        Json?        @db.JsonB
+  settingsJson    Json?        @map("settings") @db.JsonB
   notes           String?      @db.Text
   createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz
   updatedAt       DateTime     @updatedAt @map("updated_at") @db.Timestamptz
