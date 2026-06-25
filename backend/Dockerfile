@@ -1,4 +1,5 @@
 FROM node:20-alpine AS builder
+RUN apk add --no-cache openssl libssl3
 WORKDIR /app
 COPY package*.json ./
 RUN npm install && npm install --package-lock-only
@@ -6,6 +7,7 @@ COPY . .
 RUN npx prisma generate --schema=src/database/prisma/schema.prisma && npm run build
 
 FROM node:20-alpine AS runner
+RUN apk add --no-cache openssl libssl3
 WORKDIR /app
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
