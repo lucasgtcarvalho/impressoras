@@ -205,6 +205,7 @@ model Printer {
   counterHistory      PrinterCounterHistory[]
   events              PrinterEvent[]
   printJobs           PrintJob[]
+  alerts              Alert[]
 
   @@index([clientId, status])
   @@index([clientId, ipAddress])
@@ -356,6 +357,7 @@ model Alert {
   ruleId        String?       @map("rule_id") @db.Uuid
   title         String        @db.VarChar(255)
   description   String?       @db.Text
+  eventType     String?       @map("event_type") @db.VarChar(100)
   severity      AlertSeverity @default(warning)
   status        AlertStatus   @default(open)
   source        String        @default("system") @db.VarChar(50)
