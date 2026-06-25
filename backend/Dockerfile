@@ -3,13 +3,13 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install && npm install --package-lock-only
 COPY . .
-RUN npx prisma generate && npm run build
+RUN npx prisma generate --schema=src/database/prisma/schema.prisma && npm run build
 
 FROM node:20-alpine AS runner
 WORKDIR /app
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
-COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/src/database/prisma ./prisma
 EXPOSE 3000
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
+CMD ["sh", "-c", "npx prisma migrate deploy --schema=prisma/schema.prisma && node dist/main"]
