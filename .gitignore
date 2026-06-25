@@ -1,0 +1,32 @@
+# Node
+node_modules/
+dist/
+.next/
+*.log
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+
+# Environment
+.env
+.env.local
+*.token
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Agent logs
+agent/**/logs/
+agent/**/agent.db
+
+# Coverage
+coverage/
