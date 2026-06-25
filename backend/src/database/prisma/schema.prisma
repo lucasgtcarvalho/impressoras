@@ -1,0 +1,443 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  super_admin
+  admin
+  client_manager
+  operator
+}
+
+enum ClientStatus {
+  active
+  inactive
+  suspended
+}
+
+enum AgentStatus {
+  online
+  offline
+  error
+}
+
+enum PrinterStatus {
+  online
+  offline
+  error
+  warning
+}
+
+enum AlertSeverity {
+  info
+  warning
+  critical
+}
+
+enum AlertStatus {
+  open
+  acknowledged
+  resolved
+  dismissed
+}
+
+enum JobStatus {
+  completed
+  cancelled
+  error
+  spooling
+}
+
+model User {
+  id              String   @id @default(uuid()) @db.Uuid
+  name            String   @db.VarChar(255)
+  email           String   @unique @db.VarChar(255)
+  passwordHash    String   @map("password_hash") @db.VarChar(255)
+  phone           String?  @db.VarChar(20)
+  avatarUrl       String?  @map("avatar_url") @db.Text
+  isActive        Boolean  @default(true) @map("is_active")
+  role            UserRole @default(operator)
+  lastLoginAt     DateTime? @map("last_login_at") @db.Timestamptz
+  refreshToken    String?  @map("refresh_token") @db.Text
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  clientLinks   UserClientLink[]
+  resolvedAlerts Alert[]        @relation("ResolvedBy")
+  auditLogs     AuditLog[]
+
+  @@map("users")
+}
+
+model UserClientLink {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  clientId  String   @map("client_id") @db.Uuid
+  role      UserRole @default(operator)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clientId])
+  @@map("user_client_links")
+}
+
+model Client {
+  id              String       @id @default(uuid()) @db.Uuid
+  name            String       @db.VarChar(255)
+  legalName       String?      @map("legal_name") @db.VarChar(255)
+  document        String?      @db.VarChar(20)
+  email           String?      @db.VarChar(255)
+  phone           String?      @db.VarChar(20)
+  address         Json?        @db.JsonB
+  status          ClientStatus @default(active)
+  activationCode  String       @unique @map("activation_code") @db.VarChar(64)
+  maxAgents       Int          @default(5) @map("max_agents")
+  maxPrinters     Int          @default(100) @map("max_printers")
+  settings        Json?        @db.JsonB
+  notes           String?      @db.Text
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime     @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt       DateTime?    @map("deleted_at") @db.Timestamptz
+
+  userLinks     UserClientLink[]
+  settings      ClientSetting?
+  agents        Agent[]
+  printers      Printer[]
+  printerStatusHistory PrinterStatusHistory[]
+  printerSupplyLevels  PrinterSupplyLevel[]
+  printerCounterHistory PrinterCounterHistory[]
+  printerEvents PrinterEvent[]
+  printJobs     PrintJob[]
+  printJobRawLogs PrintJobRawLog[]
+  alerts        Alert[]
+  alertRules    AlertRule[]
+  agentSyncLogs AgentSyncLog[]
+  auditLogs     AuditLog[]
+
+  @@map("clients")
+}
+
+model ClientSetting {
+  id                      String   @id @default(uuid()) @db.Uuid
+  clientId                String   @unique @map("client_id") @db.Uuid
+  collectionIntervalSeconds Int     @default(300) @map("collection_interval_seconds")
+  dataRetentionDays       Int      @default(365) @map("data_retention_days")
+  alertOfflineMinutes     Int      @default(10) @map("alert_offline_minutes")
+  alertTonerLowThreshold  Int      @default(20) @map("alert_toner_low_threshold")
+  costPerPageMono         Decimal? @map("cost_per_page_mono") @db.Decimal(10, 4)
+  costPerPageColor        Decimal? @map("cost_per_page_color") @db.Decimal(10, 4)
+  currency                String   @default("BRL") @db.VarChar(3)
+  timezone                String   @default("America/Sao_Paulo") @db.VarChar(50)
+  createdAt               DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt               DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  client Client @relation(fields: [clientId], references: [id])
+
+  @@map("client_settings")
+}
+
+model Agent {
+  id             String      @id @default(uuid()) @db.Uuid
+  clientId       String      @map("client_id") @db.Uuid
+  name           String      @db.VarChar(255)
+  agentVersion   String?     @map("agent_version") @db.VarChar(20)
+  osInfo         String?     @map("os_info") @db.VarChar(255)
+  localIp        String?     @map("local_ip") @db.Inet
+  macAddress     String?     @map("mac_address") @db.VarChar(17)
+  status         AgentStatus @default(offline)
+  lastContactAt  DateTime?   @map("last_contact_at") @db.Timestamptz
+  lastSyncAt     DateTime?   @map("last_sync_at") @db.Timestamptz
+  tokenHash      String?     @map("token_hash") @db.VarChar(255)
+  tokenExpiresAt DateTime?   @map("token_expires_at") @db.Timestamptz
+  config         Json?       @db.JsonB
+  isActive       Boolean     @default(true) @map("is_active")
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime    @updatedAt @map("updated_at") @db.Timestamptz
+
+  client        Client        @relation(fields: [clientId], references: [id])
+  printers      Printer[]
+  printJobs     PrintJob[]
+  printJobRawLogs PrintJobRawLog[]
+  syncLogs      AgentSyncLog[]
+
+  @@map("agents")
+}
+
+model Printer {
+  id              String        @id @default(uuid()) @db.Uuid
+  clientId        String        @map("client_id") @db.Uuid
+  agentId         String?       @map("agent_id") @db.Uuid
+  name            String        @db.VarChar(255)
+  displayName     String?       @map("display_name") @db.VarChar(255)
+  ipAddress       String?       @map("ip_address") @db.Inet
+  hostname        String?       @db.VarChar(255)
+  macAddress      String?       @map("mac_address") @db.VarChar(17)
+  manufacturer    String?       @db.VarChar(100)
+  model           String?       @db.VarChar(255)
+  serialNumber    String?       @map("serial_number") @db.VarChar(100)
+  location        String?       @db.VarChar(255)
+  firmwareVersion String?       @map("firmware_version") @db.VarChar(100)
+  snmpVersion     String?       @map("snmp_version") @db.VarChar(5)
+  status          PrinterStatus @default(online)
+  statusDetail    String?       @map("status_detail") @db.VarChar(100)
+  lastContactAt   DateTime?     @map("last_contact_at") @db.Timestamptz
+  uptimeSeconds   BigInt?       @map("uptime_seconds")
+  totalPages      BigInt?       @map("total_pages")
+  isMonochrome    Boolean?      @map("is_monochrome")
+  discoveryMethod String?       @map("discovery_method") @db.VarChar(50)
+  notes           String?       @db.Text
+  isActive        Boolean       @default(true) @map("is_active")
+  firstSeenAt     DateTime?     @map("first_seen_at") @db.Timestamptz
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+
+  client              Client                   @relation(fields: [clientId], references: [id])
+  agent               Agent?                   @relation(fields: [agentId], references: [id])
+  statusHistory       PrinterStatusHistory[]
+  supplyLevels        PrinterSupplyLevel[]
+  counterHistory      PrinterCounterHistory[]
+  events              PrinterEvent[]
+  printJobs           PrintJob[]
+
+  @@index([clientId, status])
+  @@index([clientId, ipAddress])
+  @@index([serialNumber])
+  @@index([agentId])
+  @@map("printers")
+}
+
+model PrinterStatusHistory {
+  id            BigInt        @id @default(autoincrement())
+  printerId     String        @map("printer_id") @db.Uuid
+  clientId      String        @map("client_id") @db.Uuid
+  status        String        @db.VarChar(50)
+  statusDetail  String?       @map("status_detail") @db.VarChar(100)
+  uptimeSeconds BigInt?       @map("uptime_seconds")
+  collectedAt   DateTime      @map("collected_at") @db.Timestamptz
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz
+
+  printer Printer @relation(fields: [printerId], references: [id])
+  client  Client  @relation(fields: [clientId], references: [id])
+
+  @@index([printerId, collectedAt(sort: Desc)])
+  @@map("printer_status_history")
+}
+
+model PrinterSupplyLevel {
+  id            BigInt   @id @default(autoincrement())
+  printerId     String   @map("printer_id") @db.Uuid
+  clientId      String   @map("client_id") @db.Uuid
+  supplyType    String   @map("supply_type") @db.VarChar(50)
+  supplyName    String?  @map("supply_name") @db.VarChar(100)
+  levelPercent  Int?     @map("level_percent")
+  levelRemaining Int?    @map("level_remaining")
+  maxCapacity   Int?     @map("max_capacity")
+  status        String   @default("unknown") @db.VarChar(20)
+  collectedAt   DateTime @map("collected_at") @db.Timestamptz
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  printer Printer @relation(fields: [printerId], references: [id])
+  client  Client  @relation(fields: [clientId], references: [id])
+
+  @@index([printerId, collectedAt(sort: Desc)])
+  @@index([printerId, supplyType, collectedAt(sort: Desc)])
+  @@map("printer_supply_levels")
+}
+
+model PrinterCounterHistory {
+  id           BigInt   @id @default(autoincrement())
+  printerId    String   @map("printer_id") @db.Uuid
+  clientId     String   @map("client_id") @db.Uuid
+  totalPages   BigInt?  @map("total_pages")
+  monoPages    BigInt?  @map("mono_pages")
+  colorPages   BigInt?  @map("color_pages")
+  copyPages    BigInt?  @map("copy_pages")
+  scanPages    BigInt?  @map("scan_pages")
+  duplexPages  BigInt?  @map("duplex_pages")
+  totalJobs    BigInt?  @map("total_jobs")
+  collectedAt  DateTime @map("collected_at") @db.Timestamptz
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  printer Printer @relation(fields: [printerId], references: [id])
+  client  Client  @relation(fields: [clientId], references: [id])
+
+  @@index([printerId, collectedAt(sort: Desc)])
+  @@map("printer_counter_history")
+}
+
+model PrinterEvent {
+  id            BigInt         @id @default(autoincrement())
+  printerId     String         @map("printer_id") @db.Uuid
+  clientId      String         @map("client_id") @db.Uuid
+  eventType     String         @map("event_type") @db.VarChar(100)
+  severity      AlertSeverity  @default(warning)
+  code          String?        @db.VarChar(50)
+  description   String?        @db.Text
+  rawData       String?        @map("raw_data") @db.Text
+  isResolved    Boolean        @default(false) @map("is_resolved")
+  resolvedAt    DateTime?      @map("resolved_at") @db.Timestamptz
+  resolvedBy    String?        @map("resolved_by") @db.Uuid
+  resolutionNote String?       @map("resolution_note") @db.Text
+  occurredAt    DateTime        @map("occurred_at") @db.Timestamptz
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz
+
+  printer Printer @relation(fields: [printerId], references: [id])
+  client  Client  @relation(fields: [clientId], references: [id])
+
+  @@index([printerId, occurredAt(sort: Desc)])
+  @@index([clientId, severity, isResolved])
+  @@map("printer_events")
+}
+
+model PrintJob {
+  id            BigInt    @id @default(autoincrement())
+  clientId      String    @map("client_id") @db.Uuid
+  printerId     String    @map("printer_id") @db.Uuid
+  agentId       String?   @map("agent_id") @db.Uuid
+  jobId         String?   @map("job_id") @db.VarChar(100)
+  documentName  String?   @map("document_name") @db.VarChar(500)
+  documentType  String?   @map("document_type") @db.VarChar(20)
+  pages         Int?
+  copies        Int       @default(1)
+  colorPages    Int?      @map("color_pages")
+  monoPages     Int?      @map("mono_pages")
+  isDuplex      Boolean?  @map("is_duplex")
+  paperSize     String?   @map("paper_size") @db.VarChar(20)
+  username      String?   @db.VarChar(255)
+  computerName  String?   @map("computer_name") @db.VarChar(255)
+  jobStatus     JobStatus @default(completed) @map("job_status")
+  jobSizeBytes  BigInt?   @map("job_size_bytes")
+  printedAt     DateTime? @map("printed_at") @db.Timestamptz
+  collectedAt   DateTime  @map("collected_at") @db.Timestamptz
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  client  Client  @relation(fields: [clientId], references: [id])
+  printer Printer @relation(fields: [printerId], references: [id])
+  agent   Agent?  @relation(fields: [agentId], references: [id])
+
+  @@index([clientId, printedAt(sort: Desc)])
+  @@index([printerId, printedAt(sort: Desc)])
+  @@index([username, printedAt(sort: Desc)])
+  @@index([printedAt])
+  @@map("print_jobs")
+}
+
+model PrintJobRawLog {
+  id          BigInt   @id @default(autoincrement())
+  clientId    String   @map("client_id") @db.Uuid
+  agentId     String   @map("agent_id") @db.Uuid
+  rawData     Json     @map("raw_data") @db.JsonB
+  source      String   @db.VarChar(50)
+  processed   Boolean  @default(false)
+  processedAt DateTime? @map("processed_at") @db.Timestamptz
+  error       String?  @db.Text
+  collectedAt DateTime @map("collected_at") @db.Timestamptz
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  client Client @relation(fields: [clientId], references: [id])
+  agent  Agent  @relation(fields: [agentId], references: [id])
+
+  @@index([clientId, processed, collectedAt])
+  @@index([agentId])
+  @@map("print_job_raw_logs")
+}
+
+model Alert {
+  id            String        @id @default(uuid()) @db.Uuid
+  clientId      String        @map("client_id") @db.Uuid
+  printerId     String?       @map("printer_id") @db.Uuid
+  ruleId        String?       @map("rule_id") @db.Uuid
+  title         String        @db.VarChar(255)
+  description   String?       @db.Text
+  severity      AlertSeverity @default(warning)
+  status        AlertStatus   @default(open)
+  source        String        @default("system") @db.VarChar(50)
+  resolvedAt    DateTime?     @map("resolved_at") @db.Timestamptz
+  resolvedById  String?       @map("resolved_by") @db.Uuid
+  resolutionNote String?      @map("resolution_note") @db.Text
+  occurredAt    DateTime      @map("occurred_at") @db.Timestamptz
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+
+  client      Client      @relation(fields: [clientId], references: [id])
+  printer     Printer?    @relation(fields: [printerId], references: [id])
+  rule        AlertRule?  @relation(fields: [ruleId], references: [id])
+  resolvedBy  User?       @relation("ResolvedBy", fields: [resolvedById], references: [id])
+
+  @@index([clientId, status, severity])
+  @@index([printerId, status])
+  @@index([status, occurredAt])
+  @@map("alerts")
+}
+
+model AlertRule {
+  id              String        @id @default(uuid()) @db.Uuid
+  clientId        String        @map("client_id") @db.Uuid
+  name            String        @db.VarChar(255)
+  description     String?       @db.Text
+  metric          String        @db.VarChar(100)
+  condition       Json          @db.JsonB
+  severity        AlertSeverity @default(warning)
+  enabled         Boolean       @default(true)
+  notifyEmail     Boolean       @default(false) @map("notify_email")
+  notifyWebhook   Boolean       @default(false) @map("notify_webhook")
+  webhookUrl      String?       @map("webhook_url") @db.Text
+  cooldownMinutes Int           @default(60) @map("cooldown_minutes")
+  lastTriggeredAt DateTime?     @map("last_triggered_at") @db.Timestamptz
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+
+  client  Client  @relation(fields: [clientId], references: [id])
+  alerts  Alert[]
+
+  @@map("alert_rules")
+}
+
+model AgentSyncLog {
+  id              BigInt   @id @default(autoincrement())
+  agentId         String   @map("agent_id") @db.Uuid
+  clientId        String   @map("client_id") @db.Uuid
+  syncType        String   @map("sync_type") @db.VarChar(50)
+  status          String   @db.VarChar(20)
+  itemsCount      Int      @default(0) @map("items_count")
+  payloadSizeBytes Int?    @map("payload_size_bytes")
+  errorMessage    String?  @map("error_message") @db.Text
+  responseTimeMs  Int?     @map("response_time_ms")
+  syncedAt        DateTime @map("synced_at") @db.Timestamptz
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  agent  Agent  @relation(fields: [agentId], references: [id])
+  client Client @relation(fields: [clientId], references: [id])
+
+  @@index([agentId, syncedAt(sort: Desc)])
+  @@index([clientId, syncedAt(sort: Desc)])
+  @@map("agent_sync_logs")
+}
+
+model AuditLog {
+  id           BigInt   @id @default(autoincrement())
+  userId       String?  @map("user_id") @db.Uuid
+  clientId     String?  @map("client_id") @db.Uuid
+  action       String   @db.VarChar(100)
+  resourceType String   @map("resource_type") @db.VarChar(50)
+  resourceId   String?  @map("resource_id") @db.VarChar(100)
+  details      Json?    @db.JsonB
+  ipAddress    String?  @map("ip_address") @db.Inet
+  userAgent    String?  @map("user_agent") @db.Text
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user   User?   @relation(fields: [userId], references: [id])
+  client Client? @relation(fields: [clientId], references: [id])
+
+  @@index([clientId, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}
