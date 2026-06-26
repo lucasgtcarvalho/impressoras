@@ -40,9 +40,7 @@ public class LocalDatabase
     public LocalDatabase(ILogger<LocalDatabase> logger)
     {
         _logger = logger;
-        var dataDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data");
-        Directory.CreateDirectory(dataDir);
-        var dbPath = Path.Combine(dataDir, "agent.db");
+        var dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "agent.db");
         _connectionString = $"Data Source={dbPath}";
         Initialize();
     }

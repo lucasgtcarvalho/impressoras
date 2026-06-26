@@ -91,9 +91,7 @@ public class TokenManager
 
     private static string GetTokenPath()
     {
-        var dataDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data");
-        Directory.CreateDirectory(dataDir);
-        return Path.Combine(dataDir, "agent.token");
+        return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "agent.token");
     }
 
     private async Task<TokenData?> LoadTokenAsync()
