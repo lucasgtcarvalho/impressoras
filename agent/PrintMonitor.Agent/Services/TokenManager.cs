@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 
@@ -26,10 +27,17 @@ public class TokenManager
 
     public async Task InitializeAsync(CancellationToken ct)
     {
-        var savedToken = await LoadTokenAsync();
-        if (!string.IsNullOrEmpty(savedToken))
+        var saved = await LoadTokenAsync();
+        if (saved != null)
         {
-            AgentToken = savedToken;
+            AgentId = saved.AgentId;
+            AgentToken = saved.AgentToken;
+
+            // Upgrade legacy plain-text token to new JSON format
+            if (saved.IsLegacy)
+                await SaveTokenAsync(AgentToken);
+
+            _logger.LogInformation("Token loaded for agent: {AgentId}", AgentId);
             return;
         }
 
@@ -47,7 +55,7 @@ public class TokenManager
         try
         {
             var client = _httpClientFactory.CreateClient("AgentApi");
-            var response = await client.PostAsJsonAsync("/agents/activate", new
+            var response = await client.PostAsJsonAsync("agents/activate", new
             {
                 activationCode = _config.ActivationCode,
                 hostname = Environment.MachineName,
@@ -81,13 +89,42 @@ public class TokenManager
             ?.ToString() ?? "127.0.0.1";
     }
 
-    private async Task<string?> LoadTokenAsync()
+    private static string GetTokenPath()
+    {
+        var dataDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "data");
+        Directory.CreateDirectory(dataDir);
+        return Path.Combine(dataDir, "agent.token");
+    }
+
+    private async Task<TokenData?> LoadTokenAsync()
     {
         try
         {
-            var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "agent.token");
-            if (File.Exists(path))
-                return await File.ReadAllTextAsync(path);
+        var path = GetTokenPath();
+            if (!File.Exists(path)) return null;
+            var json = await File.ReadAllTextAsync(path);
+            // JSON format (new): contains agentId and agentToken
+            if (json.TrimStart().StartsWith("{"))
+                return System.Text.Json.JsonSerializer.Deserialize<TokenData>(json);
+
+            // Legacy plain text token: extract agentId from JWT payload
+            var parts = json.Split('.');
+            if (parts.Length == 3)
+            {
+                var payload = parts[1];
+                payload = payload.Replace('-', '+').Replace('_', '/');
+                switch (payload.Length % 4)
+                {
+                    case 2: payload += "=="; break;
+                    case 3: payload += "="; break;
+                }
+                var bytes = Convert.FromBase64String(payload);
+                var decoded = System.Text.Encoding.UTF8.GetString(bytes);
+                using var doc = JsonDocument.Parse(decoded);
+                var agentId = doc.RootElement.TryGetProperty("sub", out var sub) ? sub.GetString() : null;
+                return new TokenData { AgentId = agentId, AgentToken = json, IsLegacy = true };
+            }
+            return new TokenData { AgentId = null, AgentToken = json, IsLegacy = true };
         }
         catch { }
         return null;
@@ -97,13 +134,27 @@ public class TokenManager
     {
         try
         {
-            var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "agent.token");
-            await File.WriteAllTextAsync(path, token);
+            var path = GetTokenPath();
+            var data = new TokenData { AgentId = AgentId, AgentToken = token };
+            var json = System.Text.Json.JsonSerializer.Serialize(data);
+            await File.WriteAllTextAsync(path, json);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to save token");
         }
+    }
+
+    private class TokenData
+    {
+        [JsonPropertyName("agentId")]
+        public string? AgentId { get; set; }
+
+        [JsonPropertyName("agentToken")]
+        public string AgentToken { get; set; } = string.Empty;
+
+        [JsonIgnore]
+        public bool IsLegacy { get; set; }
     }
 
     private class ActivateResponse
