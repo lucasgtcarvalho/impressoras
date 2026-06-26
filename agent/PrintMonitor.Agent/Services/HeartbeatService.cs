@@ -28,7 +28,7 @@ public class HeartbeatService
             client.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _tokenManager.AgentToken);
 
-            var response = await client.PostAsync($"/agents/{_tokenManager.AgentId}/heartbeat", null, ct);
+            var response = await client.PostAsync($"agents/{_tokenManager.AgentId}/heartbeat", null, ct);
             response.EnsureSuccessStatusCode();
         }
         catch (Exception ex)
