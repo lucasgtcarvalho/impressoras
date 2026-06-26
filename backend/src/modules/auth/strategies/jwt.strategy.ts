@@ -21,6 +21,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
+    // Agent token
+    if (payload['type'] === 'agent') {
+      const agent = await this.prisma.agent.findUnique({
+        where: { id: payload.sub },
+      });
+      if (!agent || !agent.isActive) {
+        throw new UnauthorizedException('Agent not found or inactive');
+      }
+      return { id: agent.id, type: 'agent', clientId: agent.clientId };
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
       select: { id: true, email: true, role: true, isActive: true },
