@@ -86,7 +86,7 @@ public class JobCollectorService
                         Pages = int.TryParse(GetEventData(data, "Pages"), out var p) ? p : null,
                         JobSizeBytes = long.TryParse(GetEventData(data, "Size"), out var s) ? s : null,
                         JobStatus = "completed",
-                        PrintedAt = eventRecord.TimeCreated?.UtcDateTime,
+                        PrintedAt = eventRecord.TimeCreated?.ToUniversalTime(),
                     };
 
                     jobs.Add(job);
