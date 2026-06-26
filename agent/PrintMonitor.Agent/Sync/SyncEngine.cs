@@ -60,7 +60,7 @@ public class SyncEngine
                 };
 
                 var response = await client.PostAsJsonAsync(
-                    $"/agents/{_tokenManager.AgentId}/sync",
+                    $"agents/{_tokenManager.AgentId}/sync",
                     payload, ct);
 
                 if (response.IsSuccessStatusCode)
