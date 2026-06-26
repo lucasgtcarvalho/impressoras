@@ -8,6 +8,7 @@ export interface JwtPayload {
   email: string;
   role: string;
   clientIds: string[];
+  type?: string;
 }
 
 @Injectable()

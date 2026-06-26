@@ -57,7 +57,7 @@ class PrinterSyncDto {
 
   @IsOptional()
   @IsString()
-  firmware?: string;
+  firmwareVersion?: string;
 
   @IsOptional()
   @IsString()
