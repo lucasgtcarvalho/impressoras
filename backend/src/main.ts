@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { PascalToCamelPipe } from './common/pascal-to-camel.pipe';
 
 // BigInt serialization fix for JSON responses
 (BigInt.prototype as any).toJSON = function () {
@@ -18,6 +19,7 @@ async function bootstrap() {
   });
 
   app.useGlobalPipes(
+    new PascalToCamelPipe(),
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: false,

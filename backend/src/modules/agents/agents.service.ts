@@ -145,15 +145,15 @@ export class AgentsService {
 
     if (dto.printers?.length) {
       for (const p of dto.printers) {
-        const existing = await this.prisma.printer.findFirst({
-          where: {
-            clientId,
-            OR: [
-              { serialNumber: p.serialNumber },
-              { ipAddress: p.ipAddress },
-            ].filter(Boolean) as any,
-          },
-        });
+        const matchConditions: any[] = [];
+        if (p.serialNumber) matchConditions.push({ serialNumber: p.serialNumber });
+        if (p.ipAddress) matchConditions.push({ ipAddress: p.ipAddress });
+
+        const existing = matchConditions.length > 0
+          ? await this.prisma.printer.findFirst({
+              where: { clientId, OR: matchConditions },
+            })
+          : null;
 
         const printerData = {
           clientId,
