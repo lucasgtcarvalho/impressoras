@@ -9,14 +9,7 @@ export class DashboardService {
     const now = new Date();
     const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const printerIdentityFilter = {
-      isActive: true,
-      OR: [
-        { manufacturer: { not: null } },
-        { model: { not: null } },
-        { serialNumber: { not: null } },
-      ],
-    };
+    const printerActiveFilter = { isActive: true };
 
     const [
       totalClients,
@@ -32,8 +25,8 @@ export class DashboardService {
     ] = await Promise.all([
       this.prisma.client.count({ where: { deletedAt: null, status: 'active' } }),
       this.prisma.agent.count({ where: { isActive: true, status: 'online' } }),
-      this.prisma.printer.count({ where: printerIdentityFilter }),
-      this.prisma.printer.count({ where: { ...printerIdentityFilter, status: 'online' } }),
+      this.prisma.printer.count({ where: printerActiveFilter }),
+      this.prisma.printer.count({ where: { ...printerActiveFilter, status: 'online' } }),
       this.prisma.alert.count({ where: { status: 'open' } }),
       this.prisma.alert.count({ where: { status: 'open', severity: 'critical' } }),
       this.prisma.printJob.aggregate({
@@ -43,7 +36,7 @@ export class DashboardService {
       this.prisma.printer.groupBy({
         by: ['status'],
         _count: true,
-        where: printerIdentityFilter,
+        where: printerActiveFilter,
       }),
       this.prisma.alert.groupBy({
         by: ['severity'],

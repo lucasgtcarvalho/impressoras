@@ -155,16 +155,13 @@ export class AgentsService {
             })
           : null;
 
-        const printerData = {
+        const printerData: any = {
           clientId,
           agentId,
           name: p.name || p.hostname || p.ipAddress,
           ipAddress: p.ipAddress,
           hostname: p.hostname,
           macAddress: p.macAddress,
-          manufacturer: p.manufacturer,
-          model: p.model,
-          serialNumber: p.serialNumber,
           location: p.location,
           firmwareVersion: p.firmwareVersion,
           status: ((p.status && ['online', 'offline', 'error', 'warning'].includes(p.status)) ? p.status : 'online') as any,
@@ -174,6 +171,9 @@ export class AgentsService {
           lastContactAt: now,
           discoveryMethod: 'snmp',
         };
+        if (p.manufacturer) printerData.manufacturer = p.manufacturer;
+        if (p.model) printerData.model = p.model;
+        if (p.serialNumber) printerData.serialNumber = p.serialNumber;
 
         if (existing) {
           await this.prisma.printer.update({
