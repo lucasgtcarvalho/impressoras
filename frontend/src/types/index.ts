@@ -40,6 +40,7 @@ export interface Printer {
   id: string;
   name: string;
   displayName?: string;
+  hostname?: string;
   ipAddress?: string;
   manufacturer?: string;
   model?: string;

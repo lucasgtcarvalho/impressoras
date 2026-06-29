@@ -33,7 +33,6 @@ public class TokenManager
             AgentId = saved.AgentId;
             AgentToken = saved.AgentToken;
 
-            // Upgrade legacy plain-text token to new JSON format
             if (saved.IsLegacy)
                 await SaveTokenAsync(AgentToken);
 
@@ -98,14 +97,12 @@ public class TokenManager
     {
         try
         {
-        var path = GetTokenPath();
+            var path = GetTokenPath();
             if (!File.Exists(path)) return null;
             var json = await File.ReadAllTextAsync(path);
-            // JSON format (new): contains agentId and agentToken
             if (json.TrimStart().StartsWith("{"))
                 return System.Text.Json.JsonSerializer.Deserialize<TokenData>(json);
 
-            // Legacy plain text token: extract agentId from JWT payload
             var parts = json.Split('.');
             if (parts.Length == 3)
             {

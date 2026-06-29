@@ -7,20 +7,14 @@ using PrintMonitor.Agent.Sync;
 using PrintMonitor.Agent.Storage;
 using PrintMonitor.Agent;
 
-var baseDir = Path.GetDirectoryName(typeof(Program).Assembly.Location)!;
-
-try { File.WriteAllText(Path.Combine(Path.GetTempPath(), "agent-debug.txt"), $"START baseDir={baseDir} args={string.Join(",", args)}\n"); } catch { }
-
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
-    .WriteTo.File(Path.Combine(baseDir, "logs", "agent-.log"), rollingInterval: RollingInterval.Day)
+    .WriteTo.File("logs/agent-.log", rollingInterval: RollingInterval.Day)
     .CreateLogger();
 
 try
 {
-    try { File.AppendAllText(Path.Combine(Path.GetTempPath(), "agent-debug.txt"), "BEFORE HOST BUILD\n"); } catch { }
     var host = Host.CreateDefaultBuilder(args)
-        .UseContentRoot(baseDir)
         .UseWindowsService(options =>
         {
             options.ServiceName = "PrintMonitor Agent";
@@ -50,16 +44,11 @@ try
         })
         .Build();
 
-    try { File.AppendAllText(Path.Combine(Path.GetTempPath(), "agent-debug.txt"), $"BUILD OK\n"); } catch { }
-
     await host.RunAsync();
-
-    try { File.AppendAllText(Path.Combine(Path.GetTempPath(), "agent-debug.txt"), $"RUN COMPLETED\n"); } catch { }
 }
 catch (Exception ex)
 {
     Log.Fatal(ex, "Agent terminated unexpectedly");
-    try { File.AppendAllText(Path.Combine(Path.GetTempPath(), "agent-debug.txt"), $"FATAL: {ex}\n"); } catch { }
 }
 finally
 {

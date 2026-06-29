@@ -61,7 +61,7 @@ export default function PrintersPage() {
                 <tr key={printer.id} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="px-4 py-3">
                     <Link href={`/printers/${printer.id}`} className="text-blue-600 hover:underline font-medium">
-                      {printer.name || printer.ipAddress}
+                      {printer.hostname || printer.name || printer.ipAddress}
                     </Link>
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">{printer.ipAddress}</td>
