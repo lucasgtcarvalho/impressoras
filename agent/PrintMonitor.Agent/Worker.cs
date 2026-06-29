@@ -48,8 +48,6 @@ public class Worker : BackgroundService
 
         var discoveryTimer = new PeriodicTimer(
             TimeSpan.FromSeconds(_config.DiscoveryIntervalSeconds));
-        var collectTimer = new PeriodicTimer(
-            TimeSpan.FromSeconds(_config.CollectionIntervalSeconds));
         var jobTimer = new PeriodicTimer(
             TimeSpan.FromSeconds(_config.JobCollectionIntervalSeconds));
         var syncTimer = new PeriodicTimer(
@@ -60,10 +58,27 @@ public class Worker : BackgroundService
         // Initial discovery
         await _discovery.DiscoverAsync(stoppingToken);
 
+        var collectTask = Task.Run(async () =>
+        {
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(_config.CollectionIntervalSeconds), stoppingToken);
+                    await _snmpCollector.CollectAsync(stoppingToken);
+                }
+                catch (TaskCanceledException) { break; }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "SNMP collection failed");
+                }
+            }
+        }, stoppingToken);
+
         var tasks = new[]
         {
             RunTimer(discoveryTimer, _discovery.DiscoverAsync, stoppingToken),
-            RunTimer(collectTimer, _snmpCollector.CollectAsync, stoppingToken),
+            collectTask,
             RunTimer(jobTimer, _jobCollector.CollectAsync, stoppingToken),
             RunTimer(syncTimer, _syncEngine.SyncAsync, stoppingToken),
             RunTimer(heartbeatTimer, _heartbeat.SendAsync, stoppingToken),

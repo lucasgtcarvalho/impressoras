@@ -18,18 +18,33 @@ export class PrintersService {
     const limit = Math.min(params.limit || 50, 100);
     const skip = (page - 1) * limit;
 
+    const hasIdentityFilter = [
+      { manufacturer: { not: null } },
+      { model: { not: null } },
+      { serialNumber: { not: null } },
+    ];
+
     const where: any = { isActive: true };
+
+    if (params.search) {
+      where.AND = [
+        { OR: hasIdentityFilter },
+        {
+          OR: [
+            { name: { contains: params.search, mode: 'insensitive' } },
+            { ipAddress: { contains: params.search } },
+            { model: { contains: params.search, mode: 'insensitive' } },
+          ],
+        },
+      ];
+    } else {
+      where.OR = hasIdentityFilter;
+    }
+
     if (params.clientId) where.clientId = params.clientId;
     if (params.status) where.status = params.status;
     if (params.manufacturer) where.manufacturer = params.manufacturer;
     if (params.agentId) where.agentId = params.agentId;
-    if (params.search) {
-      where.OR = [
-        { name: { contains: params.search, mode: 'insensitive' } },
-        { ipAddress: { contains: params.search } },
-        { model: { contains: params.search, mode: 'insensitive' } },
-      ];
-    }
 
     const [data, total] = await Promise.all([
       this.prisma.printer.findMany({
