@@ -1,17 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { formatDate, formatNumber } from "@/lib/utils";
 
 export default function PrinterDetailPage() {
   const { id, printerId } = useParams();
+  const router = useRouter();
   const [printer, setPrinter] = useState<any>(null);
   const [counterHistory, setCounterHistory] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("info");
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState("");
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -31,6 +33,13 @@ export default function PrinterDetailPage() {
       const { data } = await api.put(`/printers/${printerId}`, { displayName: editValue });
       setPrinter((prev: any) => ({ ...prev, displayName: data.displayName }));
       setEditing(false);
+    } catch { }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await api.delete(`/printers/${printerId}`);
+      router.push(`/clients/${id}/printers`);
     } catch { }
   };
 
@@ -73,7 +82,7 @@ export default function PrinterDetailPage() {
               </h1>
               <button
                 onClick={() => { setEditValue(printer.displayName || printer.name || ""); setEditing(true); }}
-                className="text-gray-400 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="text-gray-400 hover:text-blue-600 transition-opacity"
                 title="Renomear"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -86,18 +95,31 @@ export default function PrinterDetailPage() {
             {printer.model} · {printer.ipAddress}
           </p>
         </div>
-        <span
-          className={`px-3 py-1 text-sm font-medium rounded-full ${
-            printer.status === "online"
-              ? "bg-green-100 text-green-700"
-              : printer.status === "error"
-              ? "bg-red-100 text-red-700"
-              : "bg-gray-100 text-gray-600"
-          }`}
-        >
-          {printer.status}
-          {printer.statusDetail ? ` · ${printer.statusDetail}` : ""}
-        </span>
+        <div className="flex items-center gap-3">
+          {confirmingDelete ? (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-red-600 font-medium">Excluir impressora?</span>
+              <button onClick={handleDelete} className="px-3 py-1 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-700">Sim</button>
+              <button onClick={() => setConfirmingDelete(false)} className="px-3 py-1 text-sm font-medium bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Não</button>
+            </div>
+          ) : (
+            <button onClick={() => setConfirmingDelete(true)} className="px-3 py-1 text-sm font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50">
+              Excluir
+            </button>
+          )}
+          <span
+            className={`px-3 py-1 text-sm font-medium rounded-full ${
+              printer.status === "online"
+                ? "bg-green-100 text-green-700"
+                : printer.status === "error"
+                ? "bg-red-100 text-red-700"
+                : "bg-gray-100 text-gray-600"
+            }`}
+          >
+            {printer.status}
+            {printer.statusDetail ? ` · ${printer.statusDetail}` : ""}
+          </span>
+        </div>
       </div>
 
       <div className="border-b border-gray-200">
