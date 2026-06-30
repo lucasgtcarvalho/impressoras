@@ -46,12 +46,8 @@ export function Sidebar() {
   return (
     <aside className="w-64 bg-white border-r border-gray-100 h-screen flex flex-col">
       <div className="p-5 border-b border-gray-100">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18H4a2 2 0 01-2-2V9a2 2 0 012-2h1m12 0h1a2 2 0 012 2v7a2 2 0 01-2 2h-1M6 6V4a2 2 0 012-2h8a2 2 0 012 2v2M6 6h12M6 6v6a2 2 0 002 2h8a2 2 0 002-2V6" />
-            </svg>
-          </div>
+        <Link href="/dashboard" className="flex items-center gap-3">
+          <img src="/logo.png" alt="CloudSpool" className="h-8 w-auto" />
           <div>
             <span className="text-lg font-bold text-gray-900">CloudSpool</span>
             <span className="text-xs text-gray-400 block leading-tight">Gestão de Impressão</span>

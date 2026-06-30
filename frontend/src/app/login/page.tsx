@@ -32,11 +32,7 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center bg-gray-50 px-6">
         <div className="w-full max-w-sm">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl mb-4">
-              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18H4a2 2 0 01-2-2V9a2 2 0 012-2h1m12 0h1a2 2 0 012 2v7a2 2 0 01-2 2h-1M6 6V4a2 2 0 012-2h8a2 2 0 012 2v2M6 6h12M6 6v6a2 2 0 002 2h8a2 2 0 002-2V6" />
-              </svg>
-            </div>
+            <img src="/logo.png" alt="CloudSpool" className="h-12 w-auto mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-gray-900">CloudSpool</h1>
             <p className="text-sm text-gray-500 mt-1">
               Plataforma de gestão de impressoras
@@ -105,11 +101,7 @@ export default function LoginPage() {
       </div>
       <div className="hidden lg:flex flex-1 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 items-center justify-center p-12">
         <div className="max-w-md text-center">
-          <div className="w-20 h-20 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
-            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18H4a2 2 0 01-2-2V9a2 2 0 012-2h1m12 0h1a2 2 0 012 2v7a2 2 0 01-2 2h-1M6 6V4a2 2 0 012-2h8a2 2 0 012 2v2M6 6h12M6 6v6a2 2 0 002 2h8a2 2 0 002-2V6" />
-            </svg>
-          </div>
+          <img src="/logo.png" alt="CloudSpool" className="h-20 w-auto mx-auto mb-6 brightness-0 invert" />
           <h2 className="text-2xl font-bold text-white mb-3">CloudSpool</h2>
           <p className="text-blue-200 leading-relaxed">
             Monitoramento inteligente de impressoras, bilhetagem e gestão de suprimentos em uma única plataforma.
