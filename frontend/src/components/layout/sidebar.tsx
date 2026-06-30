@@ -45,7 +45,7 @@ export function Sidebar() {
 
   return (
     <aside className="w-64 bg-white border-r border-gray-100 h-screen flex flex-col">
-      <div className="px-2 py-5 border-b border-gray-100">
+      <div className="px-2 py-2 border-b border-gray-100">
         <Link href="/dashboard" className="flex justify-center">
           <img src="/logo.png" alt="CloudSpool" className="h-48 w-auto" />
         </Link>
