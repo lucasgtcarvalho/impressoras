@@ -15,7 +15,7 @@ export default function ProfilePage() {
         <h1 className="text-2xl font-bold text-gray-900">Perfil</h1>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+      <div className="card-shadow p-6 space-y-4">
         <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
           <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center text-xl font-bold text-blue-600">
             {user.name?.charAt(0).toUpperCase()}

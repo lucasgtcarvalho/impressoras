@@ -27,7 +27,7 @@ export default function DashboardPage() {
   if (!stats) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full" />
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -52,7 +52,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {cards.map((card) => (
-          <div key={card.label} className="bg-white rounded-lg border border-gray-200 p-4">
+          <div key={card.label} className="card-shadow p-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-500">{card.label}</span>
               <div className={`w-2 h-2 rounded-full ${card.color}`} />
@@ -63,7 +63,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="card-shadow p-6">
           <h2 className="text-lg font-semibold mb-4">Páginas no Mês</h2>
           <p className="text-3xl font-bold text-blue-600">
             {formatNumber(stats.totalPagesThisMonth)}
@@ -71,7 +71,7 @@ export default function DashboardPage() {
           <p className="text-sm text-gray-500 mt-1">total de páginas impressas</p>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="card-shadow p-6">
           <h2 className="text-lg font-semibold mb-4">Top Clientes por Volume</h2>
           <div className="space-y-3">
             {stats.topClients.map((c, i) => (

@@ -141,7 +141,7 @@ export default function PrinterDetailPage() {
       </div>
 
       {activeTab === "info" && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6 grid grid-cols-2 gap-4">
+        <div className="card-shadow p-6 grid grid-cols-2 gap-4">
           {[
             { label: "Fabricante", value: printer.manufacturer },
             { label: "Modelo", value: printer.model },
@@ -167,7 +167,7 @@ export default function PrinterDetailPage() {
       {activeTab === "supplies" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {printer.supplyLevels?.slice(0, 8).map((supply: any, i: number) => (
-            <div key={i} className="bg-white rounded-lg border border-gray-200 p-4">
+            <div key={i} className="card-shadow p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium capitalize">
                   {supply.supplyType.replace("_", " ")}
@@ -205,7 +205,7 @@ export default function PrinterDetailPage() {
       )}
 
       {activeTab === "counters" && (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="card-shadow overflow-hidden">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50">

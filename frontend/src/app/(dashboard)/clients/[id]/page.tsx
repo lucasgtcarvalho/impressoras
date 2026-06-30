@@ -97,7 +97,7 @@ export default function ClientDetailPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {cards.map((card) => (
-          <div key={card.label} className="bg-white rounded-lg border border-gray-200 p-4">
+          <div key={card.label} className="card-shadow p-4">
             <span className="text-sm text-gray-500">{card.label}</span>
             <p className={`text-xl font-bold mt-1 ${card.color || "text-gray-900"}`}>
               {card.value}
@@ -107,7 +107,7 @@ export default function ClientDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="card-shadow p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Impressoras</h2>
             <Link
@@ -125,7 +125,7 @@ export default function ClientDetailPage() {
                 className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-md"
               >
                 <div>
-                  <p className="text-sm font-medium">{p.name}</p>
+                  <p className="text-sm font-medium">{p.displayName || p.name}</p>
                   <p className="text-xs text-gray-500">{p.ipAddress}</p>
                 </div>
                 <span
@@ -149,7 +149,7 @@ export default function ClientDetailPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="card-shadow p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Top Usuários</h2>
             <Link

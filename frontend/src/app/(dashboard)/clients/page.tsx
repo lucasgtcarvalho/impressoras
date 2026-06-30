@@ -71,10 +71,10 @@ export default function ClientsPage() {
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="card-shadow overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-200 bg-gray-50">
+              <tr className="border-b border-gray-100 bg-gray-50/80">
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
                   Nome
                 </th>

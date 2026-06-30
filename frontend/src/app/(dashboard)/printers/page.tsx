@@ -42,10 +42,10 @@ export default function PrintersPage() {
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="card-shadow overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-200 bg-gray-50">
+              <tr className="border-b border-gray-100 bg-gray-50/80">
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Nome</th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">IP</th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Modelo</th>
@@ -61,7 +61,7 @@ export default function PrintersPage() {
                 <tr key={printer.id} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="px-4 py-3">
                     <Link href={`/printers/${printer.id}`} className="text-blue-600 hover:underline font-medium">
-                      {printer.hostname || printer.name || printer.ipAddress}
+                      {printer.displayName || printer.hostname || printer.name || printer.ipAddress}
                     </Link>
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-600">{printer.ipAddress}</td>
