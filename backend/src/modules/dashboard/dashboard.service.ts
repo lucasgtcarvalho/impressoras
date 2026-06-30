@@ -8,6 +8,7 @@ export class DashboardService {
   async getGlobal() {
     const now = new Date();
     const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
 
     const printerActiveFilter = { isActive: true };
 
@@ -26,7 +27,7 @@ export class DashboardService {
       this.prisma.client.count({ where: { deletedAt: null, status: 'active' } }),
       this.prisma.agent.count({ where: { isActive: true, status: 'online' } }),
       this.prisma.printer.count({ where: printerActiveFilter }),
-      this.prisma.printer.count({ where: { ...printerActiveFilter, status: 'online' } }),
+      this.prisma.printer.count({ where: { ...printerActiveFilter, lastContactAt: { gte: fiveMinutesAgo } } }),
       this.prisma.alert.count({ where: { status: 'open' } }),
       this.prisma.alert.count({ where: { status: 'open', severity: 'critical' } }),
       this.prisma.printJob.aggregate({
@@ -84,6 +85,7 @@ export class DashboardService {
     const now = new Date();
     const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
 
     const [
       totalPrinters,
@@ -98,7 +100,7 @@ export class DashboardService {
       topUsers,
     ] = await Promise.all([
       this.prisma.printer.count({ where: { clientId, isActive: true } }),
-      this.prisma.printer.count({ where: { clientId, isActive: true, status: 'online' } }),
+      this.prisma.printer.count({ where: { clientId, isActive: true, lastContactAt: { gte: fiveMinutesAgo } } }),
       this.prisma.printer.count({ where: { clientId, isActive: true, status: { in: ['error', 'warning'] } } }),
       this.prisma.agent.count({ where: { clientId, isActive: true, status: 'online' } }),
       this.prisma.alert.count({ where: { clientId, status: 'open' } }),

@@ -200,7 +200,7 @@ export class ClientsService {
     ] = await Promise.all([
       this.prisma.printer.count({ where: { clientId: id, isActive: true } }),
       this.prisma.printer.count({
-        where: { clientId: id, isActive: true, status: 'online' },
+        where: { clientId: id, isActive: true, lastContactAt: { gte: new Date(Date.now() - 5 * 60 * 1000) } },
       }),
       this.prisma.printer.count({
         where: { clientId: id, isActive: true, status: 'error' },

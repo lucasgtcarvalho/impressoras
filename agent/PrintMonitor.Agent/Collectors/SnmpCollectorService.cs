@@ -49,6 +49,11 @@ public class SnmpCollectorService
                     printersData.Add(printerInfo);
                     _db.UpdatePrinterCache(printer.Ip, printerInfo);
                 }
+                else
+                {
+                    printersData.Add(new PrinterInfo { IpAddress = printer.Ip, Status = "offline" });
+                    await _db.MarkPrinterInactiveAsync(printer.Ip);
+                }
 
                 if (counters != null) countersData.Add(counters);
                 if (supplies != null) suppliesData.Add(supplies);
@@ -57,6 +62,8 @@ public class SnmpCollectorService
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "SNMP collection failed for {Ip}", printer.Ip);
+                printersData.Add(new PrinterInfo { IpAddress = printer.Ip, Status = "offline" });
+                await _db.MarkPrinterInactiveAsync(printer.Ip);
                 eventsData.Add(new EventInfo
                 {
                     PrinterIp = printer.Ip,

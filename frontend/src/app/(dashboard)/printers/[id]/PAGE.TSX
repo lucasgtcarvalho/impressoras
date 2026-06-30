@@ -11,6 +11,8 @@ export default function PrinterDetailPage() {
   const [printer, setPrinter] = useState<any>(null);
   const [counterHistory, setCounterHistory] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("info");
+  const [editing, setEditing] = useState(false);
+  const [editValue, setEditValue] = useState("");
 
   useEffect(() => {
     loadData();
@@ -33,7 +35,15 @@ export default function PrinterDetailPage() {
     );
   }
 
-  const displayName = printer.hostname || printer.name || printer.ipAddress;
+  const displayName = printer.displayName || printer.hostname || printer.name || printer.ipAddress;
+
+  const handleRename = async () => {
+    try {
+      const { data } = await api.put(`/printers/${id}`, { displayName: editValue });
+      setPrinter((prev: any) => ({ ...prev, displayName: data.displayName }));
+      setEditing(false);
+    } catch { }
+  };
 
   const tabs = [
     { key: "info", label: "Informações" },
@@ -51,8 +61,34 @@ export default function PrinterDetailPage() {
       </div>
 
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{displayName}</h1>
+        <div className="flex-1 min-w-0">
+          {editing ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleRename(); if (e.key === "Escape") setEditing(false); }}
+                className="text-2xl font-bold text-gray-900 border-b-2 border-blue-500 outline-none bg-transparent w-full max-w-md"
+                autoFocus
+              />
+              <button onClick={handleRename} className="text-sm text-blue-600 hover:text-blue-800 font-medium">Salvar</button>
+              <button onClick={() => setEditing(false)} className="text-sm text-gray-500 hover:text-gray-700">Cancelar</button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 group">
+              <h1 className="text-2xl font-bold text-gray-900 truncate">{displayName}</h1>
+              <button
+                onClick={() => { setEditValue(printer.displayName || printer.name || ""); setEditing(true); }}
+                className="text-gray-400 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Renomear"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                </svg>
+              </button>
+            </div>
+          )}
           <p className="text-sm text-gray-500 mt-1">
             {printer.model ? `${printer.model} · ` : ""}
             {printer.ipAddress}

@@ -5,6 +5,15 @@ import { PrismaService } from '../../database/prisma.service';
 export class PrintersService {
   constructor(private prisma: PrismaService) {}
 
+  private computeStatus(lastContactAt: Date | null, dbStatus: string): string {
+    if (dbStatus === 'offline') return 'offline';
+    if (!lastContactAt) return 'offline';
+    const staleMs = 5 * 60 * 1000;
+    const isStale = Date.now() - lastContactAt.getTime() > staleMs;
+    if (isStale && dbStatus === 'online') return 'offline';
+    return dbStatus;
+  }
+
   async findAll(params: {
     page?: number;
     limit?: number;
@@ -29,7 +38,6 @@ export class PrintersService {
     }
 
     if (params.clientId) where.clientId = params.clientId;
-    if (params.status) where.status = params.status;
     if (params.manufacturer) where.manufacturer = params.manufacturer;
     if (params.agentId) where.agentId = params.agentId;
 
@@ -55,8 +63,17 @@ export class PrintersService {
       this.prisma.printer.count({ where }),
     ]);
 
+    const mapped = data.map(p => ({
+      ...p,
+      status: this.computeStatus(p.lastContactAt, p.status),
+    }));
+
+    const filtered = params.status
+      ? mapped.filter(p => p.status === params.status)
+      : mapped;
+
     return {
-      data,
+      data: filtered,
       meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
   }
@@ -75,7 +92,10 @@ export class PrintersService {
     });
 
     if (!printer) throw new NotFoundException('Printer not found');
-    return printer;
+    return {
+      ...printer,
+      status: this.computeStatus(printer.lastContactAt, printer.status),
+    };
   }
 
   async update(id: string, data: { displayName?: string; location?: string; notes?: string }) {

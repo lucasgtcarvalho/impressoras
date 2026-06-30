@@ -114,6 +114,17 @@ public class LocalDatabase
         return printers;
     }
 
+    public async Task MarkPrinterInactiveAsync(string ip)
+    {
+        using var conn = new SqliteConnection(_connectionString);
+        await conn.OpenAsync();
+
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "UPDATE discovered_printers SET is_active = 0 WHERE ip = @ip";
+        cmd.Parameters.AddWithValue("@ip", ip);
+        await cmd.ExecuteNonQueryAsync();
+    }
+
     public async Task SaveDiscoveredPrinterAsync(PrinterCacheEntry entry)
     {
         using var conn = new SqliteConnection(_connectionString);
@@ -121,8 +132,11 @@ public class LocalDatabase
 
         using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
-            INSERT OR REPLACE INTO discovered_printers (ip, mac, last_seen, is_active)
-            VALUES (@ip, @mac, @lastSeen, 1)";
+            INSERT INTO discovered_printers (ip, mac, last_seen, is_active)
+            VALUES (@ip, @mac, @lastSeen, 1)
+            ON CONFLICT(ip) DO UPDATE SET
+                mac = COALESCE(@mac, mac),
+                last_seen = @lastSeen";
         cmd.Parameters.AddWithValue("@ip", entry.Ip);
         cmd.Parameters.AddWithValue("@mac", (object?)entry.Mac ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@lastSeen", entry.LastSeen.ToString("O"));
