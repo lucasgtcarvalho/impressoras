@@ -28,8 +28,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex">
-      <div className="flex-1 flex items-center justify-center bg-gray-50 px-6">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="w-full max-w-sm px-6">
         <div className="w-full max-w-sm">
           <div className="text-center mb-8">
             <img src="/logo.png" alt="CloudSpool" className="h-12 w-auto mx-auto mb-4" />
@@ -99,22 +99,7 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 items-center justify-center p-12">
-        <div className="max-w-md text-center">
-          <img src="/logo.png" alt="CloudSpool" className="h-20 w-auto mx-auto mb-6 brightness-0 invert" />
-          <h2 className="text-2xl font-bold text-white mb-3">CloudSpool</h2>
-          <p className="text-blue-200 leading-relaxed">
-            Monitoramento inteligente de impressoras, bilhetagem e gestão de suprimentos em uma única plataforma.
-          </p>
-          <div className="mt-8 flex justify-center gap-3">
-            {["Confiável", "Moderno", "Eficiente"].map((tag) => (
-              <span key={tag} className="px-3 py-1 bg-white/10 text-white/80 text-xs font-medium rounded-full backdrop-blur-sm">
-                {tag}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
+
     </div>
   );
 }

@@ -136,7 +136,8 @@ public class LocalDatabase
             VALUES (@ip, @mac, @lastSeen, 1)
             ON CONFLICT(ip) DO UPDATE SET
                 mac = COALESCE(@mac, mac),
-                last_seen = @lastSeen";
+                last_seen = @lastSeen,
+                is_active = 1";
         cmd.Parameters.AddWithValue("@ip", entry.Ip);
         cmd.Parameters.AddWithValue("@mac", (object?)entry.Mac ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@lastSeen", entry.LastSeen.ToString("O"));

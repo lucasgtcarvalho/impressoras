@@ -51,7 +51,6 @@ public class SnmpCollectorService
                 }
                 else
                 {
-                    printersData.Add(new PrinterInfo { IpAddress = printer.Ip, Status = "offline" });
                     await _db.MarkPrinterInactiveAsync(printer.Ip);
                 }
 
@@ -62,16 +61,7 @@ public class SnmpCollectorService
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "SNMP collection failed for {Ip}", printer.Ip);
-                printersData.Add(new PrinterInfo { IpAddress = printer.Ip, Status = "offline" });
                 await _db.MarkPrinterInactiveAsync(printer.Ip);
-                eventsData.Add(new EventInfo
-                {
-                    PrinterIp = printer.Ip,
-                    EventType = "offline",
-                    Severity = "warning",
-                    Description = $"SNMP communication failed: {ex.Message}",
-                    OccurredAt = DateTime.UtcNow
-                });
             }
         }
 
@@ -81,7 +71,11 @@ public class SnmpCollectorService
         if (countersData.Count > 0)
             await _db.EnqueueSyncAsync("counters", countersData);
         if (suppliesData.Count > 0)
+        {
+            foreach (var s in suppliesData)
+                _logger.LogInformation("Supplies for {Ip}: {N} items", s.PrinterIp, s.Supplies?.Count ?? 0);
             await _db.EnqueueSyncAsync("supplies", suppliesData);
+        }
         if (eventsData.Count > 0)
             await _db.EnqueueSyncAsync("events", eventsData);
 

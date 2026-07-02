@@ -225,11 +225,13 @@ export class AgentsService {
     }
 
     if (dto.supplies?.length) {
+      console.log(`[DEBUG] supplies count: ${dto.supplies.length}`);
       for (const s of dto.supplies) {
+        console.log(`[DEBUG] supply ip=${s.printerIp}, supplies=${JSON.stringify(s.supplies)}`);
         const printer = await this.prisma.printer.findFirst({
           where: { clientId, ipAddress: s.printerIp },
         });
-        if (!printer) continue;
+        if (!printer) { console.log(`[DEBUG] printer not found for ${s.printerIp}`); continue; }
 
         for (const supply of s.supplies) {
           await this.prisma.printerSupplyLevel.create({

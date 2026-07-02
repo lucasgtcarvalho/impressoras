@@ -1,59 +1,86 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-
-const icons: Record<string, JSX.Element> = {
-  dashboard: (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-    </svg>
-  ),
-  printers: (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18H4a2 2 0 01-2-2V9a2 2 0 012-2h1m12 0h1a2 2 0 012 2v7a2 2 0 01-2 2h-1M6 6V4a2 2 0 012-2h8a2 2 0 012 2v2M6 6h12M6 6v6a2 2 0 002 2h8a2 2 0 002-2V6" />
-    </svg>
-  ),
-  clients: (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-4a1 1 0 011-1h2a1 1 0 011 1v4m-4 0h4" />
-    </svg>
-  ),
-  alerts: (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  ),
-  reports: (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-    </svg>
-  ),
-};
+import { useAuthStore } from "@/stores/auth-store";
+import {
+  LayoutDashboard,
+  Printer,
+  Users,
+  Bell,
+  BarChart3,
+  Search,
+  Moon,
+  Sun,
+  LogOut,
+} from "lucide-react";
 
 const navItems = [
-  { label: "Dashboard", href: "/dashboard", key: "dashboard" },
-  { label: "Impressoras", href: "/printers", key: "printers" },
-  { label: "Clientes", href: "/clients", key: "clients" },
-  { label: "Alertas", href: "/alerts", key: "alerts" },
-  { label: "Relatórios", href: "/reports", key: "reports" },
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Impressoras", href: "/printers", icon: Printer },
+  { label: "Clientes", href: "/clients", icon: Users },
+  { label: "Alertas", href: "/alerts", icon: Bell },
+  { label: "Relatórios", href: "/reports", icon: BarChart3 },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, logout } = useAuthStore();
+  const [search, setSearch] = useState("");
+  const [dark, setDark] = useState(false);
+
+  useEffect(() => {
+    const isDark = localStorage.getItem("theme") === "dark";
+    setDark(isDark);
+    document.documentElement.classList.toggle("dark", isDark);
+  }, []);
+
+  const toggleTheme = () => {
+    const next = !dark;
+    setDark(next);
+    localStorage.setItem("theme", next ? "dark" : "light");
+    document.documentElement.classList.toggle("dark", next);
+  };
+
+  const filteredItems = navItems.filter((item) =>
+    item.label.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-100 h-screen flex flex-col">
-      <div className="px-2 py-2 border-b border-gray-100">
+    <aside className="w-64 bg-white dark:bg-[#111827] border-r border-gray-100 dark:border-gray-800 h-screen flex flex-col">
+      <div className="px-0.5 py-2 border-b border-gray-100 dark:border-gray-800">
         <Link href="/dashboard" className="flex justify-center">
           <img src="/logo.png" alt="CloudSpool" className="h-48 w-auto" />
         </Link>
       </div>
 
-      <nav className="flex-1 px-2 py-3 space-y-1">
-        {navItems.map((item) => {
-          const isActive = pathname.startsWith(item.href);
+      <div className="px-3 py-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
+          <input
+            type="text"
+            placeholder="Buscar..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 text-sm bg-gray-50 dark:bg-[#1E293B] border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+          />
+        </div>
+      </div>
+
+      <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
+        {filteredItems.map((item) => {
+          const isActive =
+            pathname === item.href ||
+            (item.href !== "/dashboard" && pathname.startsWith(item.href));
+          const Icon = item.icon;
           return (
             <Link
               key={item.href}
@@ -61,32 +88,59 @@ export function Sidebar() {
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                 isActive
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                  ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
+                  : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-[#1E293B] hover:text-gray-700 dark:hover:text-gray-200"
               )}
             >
-              <span className={cn(
-                "flex-shrink-0",
-                isActive ? "text-blue-600" : "text-gray-400"
-              )}>
-                {icons[item.key]}
-              </span>
-              {item.label}
+              <Icon
+                className={cn(
+                  "w-5 h-5 flex-shrink-0",
+                  isActive
+                    ? "text-blue-600 dark:text-blue-400"
+                    : "text-gray-400 dark:text-gray-500"
+                )}
+              />
+              <span>{item.label}</span>
             </Link>
           );
         })}
       </nav>
 
-      <div className="px-3 py-4 border-t border-gray-100">
-        <Link
-          href="/profile"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-all duration-200"
+      <div className="border-t border-gray-100 dark:border-gray-800">
+        <button
+          onClick={toggleTheme}
+          className="flex items-center gap-3 w-full px-4 py-3 text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-[#1E293B] hover:text-gray-700 dark:hover:text-gray-200 transition-all duration-200"
         >
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-xs font-bold text-white">
-            U
+          {dark ? (
+            <Sun className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+          ) : (
+            <Moon className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+          )}
+          <span>{dark ? "Tema claro" : "Tema escuro"}</span>
+        </button>
+
+        <div className="px-3 py-3">
+          <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-[#1E293B] transition-all duration-200 group">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+              {user?.name?.charAt(0)?.toUpperCase() || "U"}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200 truncate">
+                {user?.name || "Usuário"}
+              </p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 truncate capitalize">
+                {user?.role?.replace(/_/g, " ") || ""}
+              </p>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="p-1.5 rounded-md text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-all"
+              title="Sair"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
-          <span className="font-medium">Meu Perfil</span>
-        </Link>
+        </div>
       </div>
     </aside>
   );

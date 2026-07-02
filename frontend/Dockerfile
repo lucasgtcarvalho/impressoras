@@ -1,4 +1,5 @@
 FROM node:20-alpine AS builder
+ENV NEXT_PUBLIC_API_URL=/api/v1
 WORKDIR /app
 COPY package*.json ./
 RUN npm install && npm install --package-lock-only

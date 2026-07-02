@@ -11,6 +11,7 @@ export default function ClientDetailPage() {
   const [client, setClient] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
   const [printers, setPrinters] = useState<any[]>([]);
+  const [alerts, setAlerts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
 
@@ -21,14 +22,16 @@ export default function ClientDetailPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [clientRes, statsRes, printersRes] = await Promise.all([
+      const [clientRes, statsRes, printersRes, alertsRes] = await Promise.all([
         api.get(`/clients/${id}`),
         api.get(`/clients/${id}/stats`),
         api.get(`/printers?clientId=${id}&limit=5`),
+        api.get("/alerts", { params: { clientId: id, status: "open", limit: 10 } }),
       ]);
       setClient(clientRes.data);
       setStats(statsRes.data);
       setPrinters(printersRes.data.data || []);
+      setAlerts(alertsRes.data.data || []);
     } finally {
       setLoading(false);
     }
@@ -50,7 +53,7 @@ export default function ClientDetailPage() {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch {
-      alert("Erro ao baixar o agente. Verifique se os arquivos estão disponíveis no servidor.");
+      alert("Erro ao baixar o agente. Verifique se os arquivos estao disponiveis no servidor.");
     } finally {
       setDownloading(false);
     }
@@ -64,7 +67,7 @@ export default function ClientDetailPage() {
     );
   }
 
-  if (!client) return <p>Cliente não encontrado</p>;
+  if (!client) return <p>Cliente nao encontrado</p>;
 
   const cards = [
     { label: "Impressoras", value: stats?.totalPrinters || 0 },
@@ -72,8 +75,20 @@ export default function ClientDetailPage() {
     { label: "Offline", value: stats?.offlinePrinters || 0, color: "text-red-600" },
     { label: "Alertas", value: stats?.openAlerts || 0 },
     { label: "Agentes", value: stats?.activeAgents || 0 },
-    { label: "Páginas no Mês", value: formatNumber(stats?.totalPagesThisMonth || 0) },
+    { label: "Jobs Mes", value: formatNumber(stats?.totalJobsThisMonth || 0) },
   ];
+
+  const severityBadge = (s: string) => {
+    if (s === "critical") return "px-1.5 py-0.5 text-xs font-medium rounded text-red-700 bg-red-50 shrink-0";
+    if (s === "warning") return "px-1.5 py-0.5 text-xs font-medium rounded text-yellow-700 bg-yellow-50 shrink-0";
+    return "px-1.5 py-0.5 text-xs font-medium rounded text-blue-700 bg-blue-50 shrink-0";
+  };
+
+  const severityLabel = (s: string) => {
+    if (s === "critical") return "CRIT";
+    if (s === "warning") return "AVISO";
+    return "INFO";
+  };
 
   return (
     <div className="space-y-6">
@@ -96,14 +111,14 @@ export default function ClientDetailPage() {
             href={`/clients/${id}/settings`}
             className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
           >
-            Configurações
+            Configuracoes
           </Link>
         </div>
       </div>
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-blue-700">Código de Ativação</p>
+          <p className="text-sm font-medium text-blue-700">Codigo de Ativacao</p>
           <p className="text-lg font-mono text-blue-900 mt-1">
             {client.activationCode}
           </p>
@@ -186,31 +201,36 @@ export default function ClientDetailPage() {
 
         <div className="card-shadow p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Top Usuários</h2>
+            <h2 className="text-lg font-semibold">Ultimos Eventos</h2>
             <Link
-              href={`/clients/${id}/jobs`}
+              href={`/clients/${id}/alerts`}
               className="text-sm text-blue-600 hover:text-blue-800"
             >
-              Ver bilhetagem
+              Ver todos
             </Link>
           </div>
-          {stats?.topUsers?.length > 0 ? (
+          {alerts.length > 0 ? (
             <div className="space-y-2">
-              {stats.topUsers.map((u: any, i: number) => (
+              {alerts.slice(0, 8).map((a) => (
                 <div
-                  key={i}
+                  key={a.id}
                   className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-md"
                 >
-                  <span className="text-sm font-medium">{u.username}</span>
-                  <span className="text-sm text-gray-600">
-                    {formatNumber(u.totalPages)} págs
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className={severityBadge(a.severity)}>
+                      {severityLabel(a.severity)}
+                    </span>
+                    <span className="text-sm truncate">{a.title}</span>
+                  </div>
+                  <span className="text-xs text-gray-400 shrink-0 ml-2">
+                    {formatDate(a.occurredAt)}
                   </span>
                 </div>
               ))}
             </div>
           ) : (
             <p className="text-sm text-gray-400 text-center py-4">
-              Nenhum dado de bilhetagem
+              Nenhum evento recente
             </p>
           )}
         </div>
