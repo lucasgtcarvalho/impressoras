@@ -13,5 +13,6 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/src/database/prisma ./prisma
+COPY --from=builder /app/public ./public
 EXPOSE 3000
 CMD ["sh", "-c", "npx prisma db push --schema=prisma/schema.prisma --accept-data-loss 2>&1 && node dist/main"]

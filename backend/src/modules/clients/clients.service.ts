@@ -3,11 +3,16 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
+import { Response } from 'express';
+import * as archiver from 'archiver';
+import * as path from 'path';
+import * as fs from 'fs';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { UpdateClientSettingsDto } from './dto/update-client-settings.dto';
 import { generateActivationCode } from '../../common/utils/helpers';
+import { loadConfig } from '../../config/config.schema';
 
 @Injectable()
 export class ClientsService {
@@ -259,5 +264,70 @@ export class ClientsService {
       update: data,
       create: { clientId: id, ...data },
     });
+  }
+
+  async streamAgentDownload(id: string, res: Response): Promise<void> {
+    const client = await this.findById(id);
+    if (!client.activationCode) {
+      throw new NotFoundException('Client has no activation code');
+    }
+
+    const config = loadConfig();
+    const agentDir = path.resolve(__dirname, '..', '..', '..', 'public', 'agent');
+
+    if (!fs.existsSync(agentDir)) {
+      throw new NotFoundException('Agent files not found on server');
+    }
+
+    const files = fs.readdirSync(agentDir).filter((f) => {
+      if (f === 'appsettings.json') return false;
+      const fp = path.join(agentDir, f);
+      return fs.statSync(fp).isFile();
+    });
+
+    const safeName = client.name.replace(/[^a-zA-Z0-9\u00C0-\u024F]/g, '-').replace(/-+/g, '-');
+    const filename = `PrintMonitor-Agent-${safeName}.zip`;
+
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    const archive = archiver('zip', { zlib: { level: 6 } });
+    archive.on('error', (err: Error) => {
+      if (!res.headersSent) {
+        res.status(500).json({ message: err.message });
+      }
+    });
+    archive.pipe(res);
+
+    for (const file of files) {
+      archive.file(path.join(agentDir, file), { name: file });
+    }
+
+    const appSettings = {
+      Agent: {
+        ServerUrl: config.agentServerUrl,
+        ActivationCode: client.activationCode,
+        CollectionIntervalSeconds: 300,
+        HeartbeatIntervalSeconds: 60,
+        JobCollectionIntervalSeconds: 120,
+        DiscoveryIntervalSeconds: 600,
+        SyncBatchMaxSize: 50,
+        SyncBatchMaxBytes: 512000,
+        MaxRetryBackoffSeconds: 300,
+        LocalRetentionDays: 7,
+        SnmpCommunity: 'public',
+        SnmpVersion: 'v2c',
+        SnmpTimeoutMs: 10000,
+        SnmpRetries: 2,
+        ScanNetworkRange: '',
+      },
+      Serilog: {
+        MinimumLevel: 'Information',
+      },
+    };
+
+    archive.append(JSON.stringify(appSettings, null, 2), { name: 'appsettings.json' });
+
+    await archive.finalize();
   }
 }

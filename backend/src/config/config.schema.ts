@@ -8,6 +8,7 @@ export interface AppConfig {
   jwtExpiration: number;
   jwtRefreshExpiration: number;
   frontendUrl: string;
+  agentServerUrl: string;
 }
 
 export function loadConfig(): AppConfig {
@@ -21,5 +22,6 @@ export function loadConfig(): AppConfig {
     jwtExpiration: parseInt(process.env.JWT_EXPIRATION || '900', 10),
     jwtRefreshExpiration: parseInt(process.env.JWT_REFRESH_EXPIRATION || '2592000', 10),
     frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3001',
+    agentServerUrl: process.env.AGENT_SERVER_URL || 'http://localhost:3000/api/v1',
   };
 }

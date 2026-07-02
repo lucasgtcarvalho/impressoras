@@ -30,3 +30,6 @@ agent/**/agent.db
 
 # Coverage
 coverage/
+
+# Agent public dir (binary files, not tracked)
+backend/public/agent/

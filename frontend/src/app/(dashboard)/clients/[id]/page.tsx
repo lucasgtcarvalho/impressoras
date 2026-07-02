@@ -12,6 +12,7 @@ export default function ClientDetailPage() {
   const [stats, setStats] = useState<any>(null);
   const [printers, setPrinters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -30,6 +31,28 @@ export default function ClientDetailPage() {
       setPrinters(printersRes.data.data || []);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadAgent = async () => {
+    setDownloading(true);
+    try {
+      const response = await api.get(`/clients/${id}/agent-download`, {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      const safeName = client.name.replace(/\s+/g, "-").replace(/[^a-zA-Z0-9\u00C0-\u024F-]/g, "");
+      link.href = url;
+      link.setAttribute("download", `PrintMonitor-Agent-${safeName}.zip`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      alert("Erro ao baixar o agente. Verifique se os arquivos estão disponíveis no servidor.");
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -85,14 +108,26 @@ export default function ClientDetailPage() {
             {client.activationCode}
           </p>
         </div>
-        <button
-          onClick={() =>
-            navigator.clipboard.writeText(client.activationCode)
-          }
-          className="text-sm text-blue-600 hover:text-blue-800"
-        >
-          Copiar
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() =>
+              navigator.clipboard.writeText(client.activationCode)
+            }
+            className="text-sm px-3 py-1.5 border border-blue-300 rounded-md text-blue-700 hover:bg-blue-100"
+          >
+            Copiar
+          </button>
+          <button
+            onClick={handleDownloadAgent}
+            disabled={downloading}
+            className="text-sm px-3 py-1.5 bg-blue-600 rounded-md text-white hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            {downloading ? "Baixando..." : "Download Agente"}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">

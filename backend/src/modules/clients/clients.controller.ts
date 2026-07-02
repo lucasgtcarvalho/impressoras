@@ -7,8 +7,10 @@ import {
   Body,
   Param,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ClientsService } from './clients.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
@@ -73,5 +75,13 @@ export class ClientsController {
     @Body() dto: UpdateClientSettingsDto,
   ) {
     return this.clientsService.updateSettings(id, dto);
+  }
+
+  @Get(':id/agent-download')
+  async downloadAgent(
+    @Param('id') id: string,
+    @Res() res: Response,
+  ) {
+    await this.clientsService.streamAgentDownload(id, res);
   }
 }
