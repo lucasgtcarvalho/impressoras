@@ -3,9 +3,18 @@
 import { useAuthStore } from "@/stores/auth-store";
 import { formatDate } from "@/lib/utils";
 
+function roleLabel(role: string) {
+  const map: Record<string, string> = {
+    super_admin: "Super Admin",
+    admin: "Tecnico",
+    client_manager: "Cliente",
+    operator: "Operador",
+  };
+  return map[role] || role;
+}
+
 export default function ProfilePage() {
   const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
 
   if (!user) return null;
 
@@ -36,26 +45,15 @@ export default function ProfilePage() {
             <p className="text-sm font-medium">{user.email}</p>
           </div>
           <div>
-            <span className="text-xs text-gray-500">Permissão</span>
-            <p className="text-sm font-medium capitalize">
-              {user.role?.replace("_", " ")}
-            </p>
+            <span className="text-xs text-gray-500">Permissao</span>
+            <p className="text-sm font-medium">{roleLabel(user.role)}</p>
           </div>
           <div>
-            <span className="text-xs text-gray-500">Último Login</span>
+            <span className="text-xs text-gray-500">Ultimo Login</span>
             <p className="text-sm font-medium">
               {user.lastLoginAt ? formatDate(user.lastLoginAt) : "-"}
             </p>
           </div>
-        </div>
-
-        <div className="pt-4 border-t border-gray-100">
-          <button
-            onClick={logout}
-            className="px-4 py-2 text-sm text-red-600 border border-red-200 rounded-md hover:bg-red-50"
-          >
-            Sair da conta
-          </button>
         </div>
       </div>
     </div>

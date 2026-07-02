@@ -15,6 +15,7 @@ import {
   Moon,
   Sun,
   LogOut,
+  UserCog,
 } from "lucide-react";
 
 const navItems = [
@@ -22,8 +23,18 @@ const navItems = [
   { label: "Impressoras", href: "/printers", icon: Printer },
   { label: "Clientes", href: "/clients", icon: Users },
   { label: "Alertas", href: "/alerts", icon: Bell },
-  { label: "Relatórios", href: "/reports", icon: BarChart3 },
+  { label: "Relatorios", href: "/reports", icon: BarChart3 },
 ];
+
+function roleLabel(role: string) {
+  const map: Record<string, string> = {
+    super_admin: "Super Admin",
+    admin: "Tecnico",
+    client_manager: "Cliente",
+    operator: "Cliente",
+  };
+  return map[role] || role;
+}
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -53,6 +64,8 @@ export function Sidebar() {
     logout();
     router.push("/login");
   };
+
+  const isAdmin = user?.role === "super_admin" || user?.role === "admin";
 
   return (
     <aside className="w-64 bg-white dark:bg-[#111827] border-r border-gray-100 dark:border-gray-800 h-screen flex flex-col">
@@ -104,6 +117,28 @@ export function Sidebar() {
             </Link>
           );
         })}
+
+        {isAdmin && (
+          <Link
+            href="/users"
+            className={cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+              pathname.startsWith("/users")
+                ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
+                : "text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-[#1E293B] hover:text-gray-700 dark:hover:text-gray-200"
+            )}
+          >
+            <UserCog
+              className={cn(
+                "w-5 h-5 flex-shrink-0",
+                pathname.startsWith("/users")
+                  ? "text-blue-600 dark:text-blue-400"
+                  : "text-gray-400 dark:text-gray-500"
+              )}
+            />
+            <span>Usuarios</span>
+          </Link>
+        )}
       </nav>
 
       <div className="border-t border-gray-100 dark:border-gray-800">
@@ -126,10 +161,10 @@ export function Sidebar() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-700 dark:text-gray-200 truncate">
-                {user?.name || "Usuário"}
+                {user?.name || "Usuario"}
               </p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 truncate capitalize">
-                {user?.role?.replace(/_/g, " ") || ""}
+              <p className="text-xs text-gray-400 dark:text-gray-500 truncate">
+                {roleLabel(user?.role)}
               </p>
             </div>
             <button
