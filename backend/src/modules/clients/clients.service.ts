@@ -328,6 +328,53 @@ export class ClientsService {
 
     archive.append(JSON.stringify(appSettings, null, 2), { name: 'appsettings.json' });
 
+    const installBat = [
+      '@echo off',
+      'title PrintMonitor Agent - Instalador',
+      'echo ============================================',
+      'echo   PrintMonitor Agent - Instalacao',
+      'echo ============================================',
+      'echo.',
+      'echo Instalando em C:\\Program Files\\PrintMonitor\\Agent\\',
+      'echo.',
+      'REM Solicita elevacao de privilegios',
+      'net session >nul 2>&1',
+      'if %errorlevel% neq 0 (',
+      '    echo Solicitando privilegios de administrador...',
+      '    powershell -Command "Start-Process \'%~f0\' -Verb RunAs -Wait"',
+      '    exit /b',
+      ')',
+      'echo [OK] Executando como administrador',
+      'echo.',
+      'set "INSTALL_DIR=C:\\Program Files\\PrintMonitor\\Agent"',
+      'if not exist "%INSTALL_DIR%" mkdir "%INSTALL_DIR%"',
+      'echo [*] Copiando arquivos...',
+      'xcopy /Y /Q "%~dp0*" "%INSTALL_DIR%\\" >nul',
+      'echo [OK] Arquivos copiados',
+      'echo.',
+      'echo [*] Removendo servico antigo (se existir)...',
+      'sc stop "PrintMonitor Agent" >nul 2>&1',
+      'sc delete "PrintMonitor Agent" >nul 2>&1',
+      'timeout /t 2 /nobreak >nul',
+      'echo [*] Instalando servico Windows...',
+      `sc create "PrintMonitor Agent" binPath= "\\"%INSTALL_DIR%\\PrintMonitor.Agent.exe\\"" start= auto`,
+      'sc description "PrintMonitor Agent" "Servico de monitoramento de impressoras PrintMonitor"',
+      'sc failure "PrintMonitor Agent" reset= 86400 actions= restart/5000/restart/10000/restart/30000',
+      'echo [OK] Servico criado',
+      'echo.',
+      'echo [*] Iniciando servico...',
+      'sc start "PrintMonitor Agent"',
+      'echo [OK] Servico iniciado',
+      'echo.',
+      'echo ============================================',
+      'echo   Instalacao concluida com sucesso!',
+      'echo   O agente esta rodando em segundo plano.',
+      'echo ============================================',
+      'pause',
+    ].join('\r\n');
+
+    archive.append(installBat, { name: 'install.bat' });
+
     await archive.finalize();
   }
 }
