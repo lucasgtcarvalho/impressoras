@@ -163,10 +163,20 @@ export class ClientsService {
     });
     if (!client) throw new NotFoundException('Client not found');
 
-    await this.prisma.client.update({
-      where: { id },
-      data: { deletedAt: new Date(), status: 'inactive' },
-    });
+    await this.prisma.$transaction([
+      this.prisma.client.update({
+        where: { id },
+        data: { deletedAt: new Date(), status: 'inactive' },
+      }),
+      this.prisma.printer.updateMany({
+        where: { clientId: id, isActive: true },
+        data: { isActive: false, status: 'offline' },
+      }),
+      this.prisma.agent.updateMany({
+        where: { clientId: id, isActive: true },
+        data: { isActive: false, status: 'offline' },
+      }),
+    ]);
   }
 
   async regenerateToken(id: string) {

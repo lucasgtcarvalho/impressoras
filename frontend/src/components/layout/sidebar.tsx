@@ -18,20 +18,11 @@ import {
   UserCog,
 } from "lucide-react";
 
-const navItems = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Impressoras", href: "/printers", icon: Printer },
-  { label: "Clientes", href: "/clients", icon: Users },
-  { label: "Alertas", href: "/alerts", icon: Bell },
-  { label: "Relatorios", href: "/reports", icon: BarChart3 },
-];
-
 function roleLabel(role: string) {
   const map: Record<string, string> = {
     super_admin: "Super Admin",
     admin: "Tecnico",
     client_manager: "Cliente",
-    operator: "Cliente",
   };
   return map[role] || role;
 }
@@ -56,16 +47,38 @@ export function Sidebar() {
     document.documentElement.classList.toggle("dark", next);
   };
 
+  const isAdmin = user?.role === "super_admin" || user?.role === "admin";
+  const isClientUser = user?.role === "client_manager" || user?.role === "operator";
+  const clientId = user?.clientLinks?.[0]?.client?.id || user?.clientIds?.[0];
+  const dashboardHref = isClientUser && clientId ? `/clients/${clientId}` : "/dashboard";
+
+  const allItems = [
+    { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, dynamicHref: true },
+    { label: "Impressoras", href: "/printers", icon: Printer, clientFilter: true },
+    { label: "Clientes", href: "/clients", icon: Users, adminOnly: true },
+    { label: "Alertas", href: "/alerts", icon: Bell, clientFilter: true },
+    { label: "Relatorios", href: "/reports", icon: BarChart3 },
+  ];
+
+  const navItems = allItems.filter((item: any) => !item.adminOnly || isAdmin);
+
   const filteredItems = navItems.filter((item) =>
     item.label.toLowerCase().includes(search.toLowerCase())
   );
+
+  const resolveHref = (item: typeof allItems[0]) => {
+    if (item.label === "Dashboard" && item.dynamicHref) return dashboardHref;
+    if (isClientUser && clientId && item.clientFilter) {
+      if (item.href === "/printers") return `/printers?clientId=${clientId}`;
+      if (item.href === "/alerts") return `/alerts?clientId=${clientId}`;
+    }
+    return item.href;
+  };
 
   const handleLogout = () => {
     logout();
     router.push("/login");
   };
-
-  const isAdmin = user?.role === "super_admin" || user?.role === "admin";
 
   return (
     <aside className="w-64 bg-white dark:bg-[#111827] border-r border-gray-100 dark:border-gray-800 h-screen flex flex-col">
@@ -90,14 +103,16 @@ export function Sidebar() {
 
       <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
         {filteredItems.map((item) => {
+          const href = resolveHref(item);
           const isActive =
             pathname === item.href ||
-            (item.href !== "/dashboard" && pathname.startsWith(item.href));
+            (item.href !== "/dashboard" && pathname.startsWith(item.href)) ||
+            (item.label === "Dashboard" && isClientUser && pathname.startsWith("/clients/"));
           const Icon = item.icon;
           return (
             <Link
               key={item.href}
-              href={item.href}
+              href={href}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                 isActive

@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Impressora.io — Gestão de Impressoras",
+  title: "CloudSpool",
   description: "Plataforma SaaS de monitoramento e bilhetagem de impressão",
 };
 

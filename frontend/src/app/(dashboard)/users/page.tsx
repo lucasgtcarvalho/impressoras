@@ -58,7 +58,6 @@ export default function UsersPage() {
     { value: "super_admin", label: "Super Admin" },
     { value: "admin", label: "Tecnico (acesso a todos clientes)" },
     { value: "client_manager", label: "Cliente (vinculado a cliente especifico)" },
-    { value: "operator", label: "Operador (vinculado a cliente especifico)" },
   ];
 
   const roleBadge = (role: string) => {
@@ -66,13 +65,11 @@ export default function UsersPage() {
       super_admin: "bg-purple-100 text-purple-700",
       admin: "bg-blue-100 text-blue-700",
       client_manager: "bg-green-100 text-green-700",
-      operator: "bg-gray-100 text-gray-700",
     };
     const labels: Record<string, string> = {
       super_admin: "Super Admin",
       admin: "Tecnico",
       client_manager: "Cliente",
-      operator: "Operador",
     };
     return { color: colors[role] || "bg-gray-100", label: labels[role] || role };
   };
@@ -122,7 +119,7 @@ export default function UsersPage() {
     alert("Senha alterada");
   };
 
-  const isClientRole = (role: string) => role === "client_manager" || role === "operator";
+  const isClientRole = (role: string) => role === "client_manager";
 
   if (loading) {
     return <div className="flex justify-center py-12"><div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full" /></div>;

@@ -8,7 +8,6 @@ function roleLabel(role: string) {
     super_admin: "Super Admin",
     admin: "Tecnico",
     client_manager: "Cliente",
-    operator: "Operador",
   };
   return map[role] || role;
 }

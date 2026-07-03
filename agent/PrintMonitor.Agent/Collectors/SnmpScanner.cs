@@ -1151,8 +1151,9 @@ public static class SnmpScanner
 
             var (typeName, readableName) = MapSupplyType(supplyType.Value, description);
 
-            // Only keep toner supplies (black and color)
-            if (typeName != "toner_black" && typeName != "toner_cyan" && typeName != "toner_magenta" && typeName != "toner_yellow")
+            if (typeName != "toner_black" && typeName != "toner_cyan" && typeName != "toner_magenta" &&
+                typeName != "toner_yellow" && typeName != "drum" && typeName != "waste_toner" &&
+                typeName != "fuser" && typeName != "transfer_roller" && typeName != "developer")
                 continue;
 
             string status = "ok";

@@ -3,10 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
+import { useAuthStore } from "@/stores/auth-store";
 import { Client } from "@/types";
 import { formatDate, formatNumber } from "@/lib/utils";
 
 export default function ClientsPage() {
+  const user = useAuthStore((s) => s.user);
+  const isAdmin = user?.role === "super_admin" || user?.role === "admin";
   const [clients, setClients] = useState<Client[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -22,6 +25,16 @@ export default function ClientsPage() {
       setClients(data.data);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (client: Client) => {
+    if (!confirm(`Excluir cliente "${client.name}"? Esta acao nao podera ser desfeita.`)) return;
+    try {
+      await api.delete(`/clients/${client.id}`);
+      loadClients();
+    } catch {
+      alert("Erro ao excluir cliente");
     }
   };
 
@@ -41,18 +54,20 @@ export default function ClientsPage() {
             Gerencie seus clientes
           </p>
         </div>
-        <Link
-          href="/clients/new"
-          className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 transition-colors"
-        >
-          Novo Cliente
-        </Link>
+        {isAdmin && (
+          <Link
+            href="/clients/new"
+            className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 transition-colors"
+          >
+            Novo Cliente
+          </Link>
+        )}
       </div>
 
       <div className="flex gap-4">
         <input
           type="text"
-          placeholder="Buscar por nome ou CNPJ..."
+          placeholder="Buscar por nome..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-80 px-3 py-2 border border-gray-300 rounded-md text-sm"
@@ -75,27 +90,14 @@ export default function ClientsPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/80">
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                  Nome
-                </th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                  CNPJ
-                </th>
-                <th className="text-center px-4 py-3 text-sm font-medium text-gray-600">
-                  Status
-                </th>
-                <th className="text-center px-4 py-3 text-sm font-medium text-gray-600">
-                  Agentes
-                </th>
-                <th className="text-center px-4 py-3 text-sm font-medium text-gray-600">
-                  Impressoras
-                </th>
-                <th className="text-center px-4 py-3 text-sm font-medium text-gray-600">
-                  Alertas
-                </th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                  Criado em
-                </th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Nome</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">CNPJ</th>
+                <th className="text-center px-4 py-3 text-sm font-medium text-gray-600">Status</th>
+                <th className="text-center px-4 py-3 text-sm font-medium text-gray-600">Agentes</th>
+                <th className="text-center px-4 py-3 text-sm font-medium text-gray-600">Impressoras</th>
+                <th className="text-center px-4 py-3 text-sm font-medium text-gray-600">Alertas</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Criado em</th>
+                {isAdmin && <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">Acoes</th>}
               </tr>
             </thead>
             <tbody>
@@ -144,6 +146,16 @@ export default function ClientsPage() {
                   <td className="px-4 py-3 text-sm text-gray-500">
                     {formatDate(client.createdAt)}
                   </td>
+                  {isAdmin && (
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        onClick={() => handleDelete(client)}
+                        className="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded"
+                      >
+                        Excluir
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

@@ -155,9 +155,11 @@ export class AgentsService {
             })
           : null;
 
+        const hasModel = p.model && p.model.trim() !== '';
         const printerData: any = {
           clientId,
           agentId,
+          isActive: hasModel,
           name: p.name || p.hostname || p.ipAddress,
           ipAddress: p.ipAddress,
           hostname: p.hostname,

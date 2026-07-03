@@ -4,10 +4,13 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import api from "@/lib/api";
+import { useAuthStore } from "@/stores/auth-store";
 import { formatNumber, formatDate } from "@/lib/utils";
 
 export default function ClientDetailPage() {
   const { id } = useParams();
+  const user = useAuthStore((s) => s.user);
+  const isAdmin = user?.role === "super_admin" || user?.role === "admin";
   const [client, setClient] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
   const [printers, setPrinters] = useState<any[]>([]);
@@ -101,49 +104,55 @@ export default function ClientDetailPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Link
-            href={`/clients/${id}/edit`}
-            className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
-          >
-            Editar
-          </Link>
-          <Link
-            href={`/clients/${id}/settings`}
-            className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
-          >
-            Configuracoes
-          </Link>
+          {isAdmin && (
+            <>
+              <Link
+                href={`/clients/${id}/edit`}
+                className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Editar
+              </Link>
+              <Link
+                href={`/clients/${id}/settings`}
+                className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Configuracoes
+              </Link>
+            </>
+          )}
         </div>
       </div>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-blue-700">Codigo de Ativacao</p>
-          <p className="text-lg font-mono text-blue-900 mt-1">
-            {client.activationCode}
-          </p>
+      {isAdmin && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-blue-700">Codigo de Ativacao</p>
+            <p className="text-lg font-mono text-blue-900 mt-1">
+              {client.activationCode}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() =>
+                navigator.clipboard.writeText(client.activationCode)
+              }
+              className="text-sm px-3 py-1.5 border border-blue-300 rounded-md text-blue-700 hover:bg-blue-100"
+            >
+              Copiar
+            </button>
+            <button
+              onClick={handleDownloadAgent}
+              disabled={downloading}
+              className="text-sm px-3 py-1.5 bg-blue-600 rounded-md text-white hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              {downloading ? "Baixando..." : "Download Agente"}
+            </button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() =>
-              navigator.clipboard.writeText(client.activationCode)
-            }
-            className="text-sm px-3 py-1.5 border border-blue-300 rounded-md text-blue-700 hover:bg-blue-100"
-          >
-            Copiar
-          </button>
-          <button
-            onClick={handleDownloadAgent}
-            disabled={downloading}
-            className="text-sm px-3 py-1.5 bg-blue-600 rounded-md text-white hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            {downloading ? "Baixando..." : "Download Agente"}
-          </button>
-        </div>
-      </div>
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {cards.map((card) => (

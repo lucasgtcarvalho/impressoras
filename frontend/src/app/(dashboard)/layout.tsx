@@ -11,7 +11,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { isAuthenticated, isLoading, loadUser } = useAuthStore();
+  const { user, isAuthenticated, isLoading, loadUser } = useAuthStore();
 
   useEffect(() => {
     loadUser();
@@ -22,6 +22,16 @@ export default function DashboardLayout({
       router.push("/login");
     }
   }, [isLoading, isAuthenticated, router]);
+
+  useEffect(() => {
+    if (user && !isLoading) {
+      const isClientUser = user.role === "client_manager" || user.role === "operator";
+      const clientId = user.clientLinks?.[0]?.client?.id || user.clientIds?.[0];
+      if (isClientUser && clientId && window.location.pathname === "/dashboard") {
+        router.replace(`/clients/${clientId}`);
+      }
+    }
+  }, [user, isLoading, router]);
 
   if (isLoading) {
     return (

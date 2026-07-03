@@ -9,9 +9,6 @@ export default function NewClientPage() {
   const [form, setForm] = useState({
     name: "",
     legalName: "",
-    document: "",
-    email: "",
-    phone: "",
     notes: "",
   });
   const [loading, setLoading] = useState(false);
@@ -47,79 +44,41 @@ export default function NewClientPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Nome Fantasia *
-            </label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-              required
-            />
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Nome Fantasia *
+          </label>
+          <input
+            type="text"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+            required
+          />
+        </div>
 
-          <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Razão Social
-            </label>
-            <input
-              type="text"
-              value={form.legalName}
-              onChange={(e) => setForm({ ...form, legalName: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-            />
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Razao Social
+          </label>
+          <input
+            type="text"
+            value={form.legalName}
+            onChange={(e) => setForm({ ...form, legalName: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+          />
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              CNPJ
-            </label>
-            <input
-              type="text"
-              value={form.document}
-              onChange={(e) => setForm({ ...form, document: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Telefone
-            </label>
-            <input
-              type="text"
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-            />
-          </div>
-
-          <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              E-mail
-            </label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-            />
-          </div>
-
-          <div className="col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Observações
-            </label>
-            <textarea
-              value={form.notes}
-              onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-              rows={3}
-            />
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Observacoes
+          </label>
+          <textarea
+            value={form.notes}
+            onChange={(e) => setForm({ ...form, notes: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+            rows={3}
+          />
         </div>
 
         <div className="flex gap-3 justify-end pt-4 border-t border-gray-100">
