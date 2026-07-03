@@ -34,16 +34,24 @@ export default function PrintJobsReport() {
 
   const [dateFrom, setDateFrom] = useState(thirtyDaysAgo);
   const [dateTo, setDateTo] = useState(today);
+  const [clientFilter, setClientFilter] = useState("");
+  const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [dailyPages, setDailyPages] = useState<DailyPage[]>([]);
   const [printerPages, setPrinterPages] = useState<PrinterPages[]>([]);
   const [totalPages, setTotalPages] = useState(0);
   const [printersCount, setPrintersCount] = useState(0);
 
+  useEffect(() => {
+    api.get("/clients?limit=200").then(({ data }) => setClients(data.data || []));
+  }, []);
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      const { data: printersData } = await api.get("/printers?limit=100");
+      const params: any = { limit: 200 };
+      if (clientFilter) params.clientId = clientFilter;
+      const { data: printersData } = await api.get("/printers", { params });
       const printers: PrinterInfo[] = printersData.data;
       setPrintersCount(printers.length);
 
@@ -113,7 +121,22 @@ export default function PrintJobsReport() {
         Impressões por Período
       </h1>
 
-      <form onSubmit={handleFilter} className="flex gap-4 items-end">
+      <form onSubmit={handleFilter} className="flex gap-4 items-end flex-wrap">
+        <div>
+          <label className="block text-sm font-medium text-gray-600 mb-1">
+            Cliente
+          </label>
+          <select
+            value={clientFilter}
+            onChange={(e) => setClientFilter(e.target.value)}
+            className="border rounded px-3 py-2 text-sm"
+          >
+            <option value="">Todos os clientes</option>
+            {clients.map((c: any) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
         <div>
           <label className="block text-sm font-medium text-gray-600 mb-1">
             De
@@ -127,7 +150,7 @@ export default function PrintJobsReport() {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-600 mb-1">
-            Até
+            Ate
           </label>
           <input
             type="date"

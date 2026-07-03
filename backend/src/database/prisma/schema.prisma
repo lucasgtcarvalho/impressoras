@@ -120,6 +120,7 @@ model Client {
   alertRules    AlertRule[]
   agentSyncLogs AgentSyncLog[]
   auditLogs     AuditLog[]
+  scheduledReports ScheduledReport[]
 
   @@map("clients")
 }
@@ -442,4 +443,23 @@ model AuditLog {
   @@index([userId, createdAt(sort: Desc)])
   @@index([action, createdAt])
   @@map("audit_logs")
+}
+
+model ScheduledReport {
+  id              String   @id @default(uuid()) @db.Uuid
+  clientId        String   @map("client_id") @db.Uuid
+  name            String   @db.VarChar(255)
+  email           String   @db.VarChar(255)
+  dayOfMonth      Int      @map("day_of_month")
+  hour            Int      @default(8)
+  minute          Int      @default(0)
+  isActive        Boolean  @default(true) @map("is_active")
+  lastRunAt       DateTime? @map("last_run_at") @db.Timestamptz
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId, isActive])
+  @@map("scheduled_reports")
 }

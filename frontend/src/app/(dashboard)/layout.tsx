@@ -44,7 +44,7 @@ export default function DashboardLayout({
   if (!isAuthenticated) return null;
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-[#0F172A] transition-colors">
+    <div className="flex min-h-screen bg-gray-50 transition-colors">
       <Sidebar />
       <main className="flex-1 overflow-auto">
         <div className="p-6">{children}</div>

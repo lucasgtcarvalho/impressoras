@@ -2,28 +2,33 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import api from "@/lib/api";
 import { Printer } from "@/types";
 import { formatDate, formatNumber } from "@/lib/utils";
 
 export default function PrintersPage() {
+  const searchParams = useSearchParams();
   const [printers, setPrinters] = useState<Printer[]>([]);
+  const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [clientFilter, setClientFilter] = useState(searchParams.get("clientId") || "");
 
   useEffect(() => {
-    api
-      .get("/printers?limit=100")
-      .then(({ data }) => setPrinters(data.data))
-      .finally(() => setLoading(false));
+    api.get("/clients?limit=200").then(({ data }) => setClients(data.data || []));
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex justify-center py-12">
-        <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full" />
-      </div>
-    );
-  }
+  useEffect(() => {
+    setLoading(true);
+    const params: any = { limit: 200 };
+    if (search) params.search = search;
+    if (clientFilter) params.clientId = clientFilter;
+    api
+      .get("/printers", { params })
+      .then(({ data }) => setPrinters(data.data))
+      .finally(() => setLoading(false));
+  }, [search, clientFilter]);
 
   return (
     <div className="space-y-6">
@@ -34,7 +39,31 @@ export default function PrintersPage() {
         </p>
       </div>
 
-      {printers.length === 0 ? (
+      <div className="flex gap-3 flex-wrap">
+        <input
+          type="text"
+          placeholder="Buscar por nome, IP, modelo, serial..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-80 px-3 py-2 border border-gray-300 rounded-md text-sm"
+        />
+        <select
+          value={clientFilter}
+          onChange={(e) => setClientFilter(e.target.value)}
+          className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+        >
+          <option value="">Todos os clientes</option>
+          {clients.map((c: any) => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full" />
+        </div>
+      ) : printers.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
           <p className="text-lg">Nenhuma impressora encontrada</p>
           <p className="text-sm mt-1">
@@ -51,8 +80,8 @@ export default function PrintersPage() {
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Modelo</th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Serial</th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Status</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Total Páginas</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Último Contato</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Total Paginas</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Ultimo Contato</th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Cliente</th>
               </tr>
             </thead>

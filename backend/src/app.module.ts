@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
@@ -12,11 +13,13 @@ import { AlertsModule } from './modules/alerts/alerts.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { QueueModule } from './queue/queue.module';
+import { ScheduledReportsModule } from './modules/scheduled-reports/scheduled-reports.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
+    ScheduleModule.forRoot(),
     DatabaseModule,
     QueueModule,
     AuthModule,
@@ -28,6 +31,7 @@ import { QueueModule } from './queue/queue.module';
     AlertsModule,
     DashboardModule,
     AuditModule,
+    ScheduledReportsModule,
   ],
 })
 export class AppModule {}

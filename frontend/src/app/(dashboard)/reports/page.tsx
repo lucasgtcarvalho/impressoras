@@ -5,18 +5,23 @@ import Link from "next/link";
 const reports = [
   {
     href: "/reports/print-jobs",
-    title: "Impressões por Período",
-    description: "Relatório detalhado de páginas impressas por data",
+    title: "Impressoes por Periodo",
+    description: "Relatorio detalhado de paginas impressas por data",
   },
   {
     href: "/reports/counters",
     title: "Contadores",
-    description: "Relatório de contadores por equipamento ou cliente com exportação CSV/XML",
+    description: "Relatorio de contadores por equipamento ou cliente com exportacao CSV/XML",
   },
   {
     href: "/reports/supplies",
     title: "Uso de Suprimentos",
-    description: "Níveis de toner e suprimentos por impressora",
+    description: "Niveis de toner e suprimentos por impressora",
+  },
+  {
+    href: "/reports/scheduled",
+    title: "Agendados",
+    description: "Envio automatico mensal de relatorio de contadores por email em XML",
   },
 ];
 

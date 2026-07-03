@@ -34,6 +34,8 @@ export class PrintersService {
         { name: { contains: params.search, mode: 'insensitive' } },
         { ipAddress: { contains: params.search } },
         { model: { contains: params.search, mode: 'insensitive' } },
+        { serialNumber: { contains: params.search, mode: 'insensitive' } },
+        { hostname: { contains: params.search, mode: 'insensitive' } },
       ];
     }
 
