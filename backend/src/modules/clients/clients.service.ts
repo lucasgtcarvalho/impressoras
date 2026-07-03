@@ -163,20 +163,31 @@ export class ClientsService {
     });
     if (!client) throw new NotFoundException('Client not found');
 
-    await this.prisma.$transaction([
-      this.prisma.client.update({
+    const printerIds = await this.prisma.printer.findMany({
+      where: { clientId: id },
+      select: { id: true },
+    });
+    const pIds = printerIds.map(p => p.id);
+
+    await this.prisma.$transaction(async (tx) => {
+      if (pIds.length > 0) {
+        await tx.printerSupplyLevel.deleteMany({ where: { printerId: { in: pIds } } });
+        await tx.printerCounterHistory.deleteMany({ where: { printerId: { in: pIds } } });
+        await tx.printerStatusHistory.deleteMany({ where: { printerId: { in: pIds } } });
+        await tx.printerEvent.deleteMany({ where: { printerId: { in: pIds } } });
+        await tx.alert.deleteMany({ where: { printerId: { in: pIds } } });
+        await tx.printJob.deleteMany({ where: { printerId: { in: pIds } } });
+        await tx.printer.deleteMany({ where: { clientId: id } });
+      }
+      await tx.agent.updateMany({
+        where: { clientId: id },
+        data: { isActive: false, status: 'offline' },
+      });
+      await tx.client.update({
         where: { id },
         data: { deletedAt: new Date(), status: 'inactive' },
-      }),
-      this.prisma.printer.updateMany({
-        where: { clientId: id, isActive: true },
-        data: { isActive: false, status: 'offline' },
-      }),
-      this.prisma.agent.updateMany({
-        where: { clientId: id, isActive: true },
-        data: { isActive: false, status: 'offline' },
-      }),
-    ]);
+      });
+    });
   }
 
   async regenerateToken(id: string) {

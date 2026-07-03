@@ -298,12 +298,48 @@ export class AgentsService {
           },
         });
 
-        if (['offline', 'toner_empty', 'error'].includes(e.eventType)) {
+        if (['offline', 'toner_empty', 'error', 'paper_jam', 'paper_empty', 'door_open', 'printer_offline', 'service_required'].includes(e.eventType)) {
           await this.prisma.printer.update({
             where: { id: printer.id },
-            data: { status: 'error', statusDetail: e.eventType, lastContactAt: now },
+            data: { status: e.eventType === 'printer_offline' ? 'offline' : 'error', statusDetail: e.eventType, lastContactAt: now },
           });
         }
+
+        // Create alert for critical hardware events
+        const alertEventTypes = ['paper_jam', 'paper_empty', 'door_open', 'toner_empty', 'service_required'];
+        if (alertEventTypes.includes(e.eventType)) {
+          const existingAlert = await this.prisma.alert.findFirst({
+            where: {
+              clientId,
+              printerId: printer.id,
+              status: 'open',
+              eventType: e.eventType,
+            },
+          });
+          if (!existingAlert) {
+            const alertTitles: Record<string, string> = {
+              paper_jam: `Papel atolado: ${printer.name}`,
+              paper_empty: `Sem papel: ${printer.name}`,
+              door_open: `Porta aberta: ${printer.name}`,
+              toner_empty: `Toner vazio: ${printer.name}`,
+              service_required: `Servico necessario: ${printer.name}`,
+            };
+            await this.prisma.alert.create({
+              data: {
+                clientId,
+                printerId: printer.id,
+                title: alertTitles[e.eventType] || `Evento: ${printer.name}`,
+                description: e.description,
+                eventType: e.eventType,
+                severity: (e.severity as any) || 'warning',
+                status: 'open',
+                source: 'agent',
+                occurredAt: now,
+              },
+            });
+          }
+        }
+
         results.events++;
       }
     }

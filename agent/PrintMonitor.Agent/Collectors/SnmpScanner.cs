@@ -21,6 +21,7 @@ public static class SnmpScanner
     private static readonly ObjectIdentifier PrtMarkerSuppliesTable = new(".1.3.6.1.2.1.43.11");
     private static readonly ObjectIdentifier HrPrinterStatus = new(".1.3.6.1.2.1.25.3.2.1.1");
     private static readonly ObjectIdentifier HrDeviceStatus = new(".1.3.6.1.2.1.25.3.2.1.2");
+    private static readonly ObjectIdentifier HrPrinterDetectedErrorState = new(".1.3.6.1.2.1.25.3.5.1.2");
 
     // Vendor-specific counter OIDs
     private static readonly ObjectIdentifier HpTotalPages = new(".1.3.6.1.4.1.11.2.3.9.1.1.7.0");
@@ -1072,6 +1073,141 @@ public static class SnmpScanner
             UptimeSeconds = uptimeSeconds,
             IsMonochrome = !isColor,
         };
+
+        // Detect hardware errors via hrPrinterDetectedErrorState
+        try
+        {
+            var ct = new CancellationTokenSource(NormalTimeout).Token;
+            var errorResult = await Messenger.GetAsync(
+                workingVersion, endpoint, communityOctet,
+                new List<Variable> { new Variable(HrPrinterDetectedErrorState) }, ct);
+
+            var errorData = errorResult?.FirstOrDefault()?.Data;
+            if (errorData is OctetString errorOctet && errorOctet.GetRaw().Length > 0)
+            {
+                byte errorByte = errorOctet.GetRaw()[0];
+
+                bool lowPaper = (errorByte & 0x01) != 0;
+                bool noPaper = (errorByte & 0x02) != 0;
+                bool lowToner = (errorByte & 0x04) != 0;
+                bool noToner = (errorByte & 0x08) != 0;
+                bool doorOpen = (errorByte & 0x10) != 0;
+                bool jammed = (errorByte & 0x20) != 0;
+                bool offline = (errorByte & 0x40) != 0;
+                bool serviceRequested = (errorByte & 0x80) != 0;
+
+                if (jammed)
+                {
+                    events.Add(new EventInfo
+                    {
+                        PrinterIp = ip,
+                        EventType = "paper_jam",
+                        Severity = "critical",
+                        Code = "PAPER_JAM",
+                        Description = "Papel atolado detectado",
+                        OccurredAt = DateTime.UtcNow,
+                    });
+                    printer.Status = "error";
+                    printer.StatusDetail = "paper_jam";
+                }
+
+                if (noPaper)
+                {
+                    events.Add(new EventInfo
+                    {
+                        PrinterIp = ip,
+                        EventType = "paper_empty",
+                        Severity = "critical",
+                        Code = "PAPER_EMPTY",
+                        Description = "Papel vazio",
+                        OccurredAt = DateTime.UtcNow,
+                    });
+                    if (printer.Status != "error") { printer.Status = "error"; printer.StatusDetail = "paper_empty"; }
+                }
+
+                if (doorOpen)
+                {
+                    events.Add(new EventInfo
+                    {
+                        PrinterIp = ip,
+                        EventType = "door_open",
+                        Severity = "warning",
+                        Code = "DOOR_OPEN",
+                        Description = "Porta aberta",
+                        OccurredAt = DateTime.UtcNow,
+                    });
+                    if (printer.Status != "error") { printer.Status = "error"; printer.StatusDetail = "door_open"; }
+                }
+
+                if (noToner)
+                {
+                    events.Add(new EventInfo
+                    {
+                        PrinterIp = ip,
+                        EventType = "toner_empty",
+                        Severity = "critical",
+                        Code = "TONER_EMPTY",
+                        Description = "Toner vazio",
+                        OccurredAt = DateTime.UtcNow,
+                    });
+                    if (printer.Status != "error") { printer.Status = "error"; printer.StatusDetail = "toner_empty"; }
+                }
+
+                if (offline)
+                {
+                    events.Add(new EventInfo
+                    {
+                        PrinterIp = ip,
+                        EventType = "printer_offline",
+                        Severity = "warning",
+                        Code = "PRINTER_OFFLINE",
+                        Description = "Impressora offline",
+                        OccurredAt = DateTime.UtcNow,
+                    });
+                    if (printer.Status != "error") { printer.Status = "offline"; printer.StatusDetail = "offline"; }
+                }
+
+                if (lowPaper)
+                {
+                    events.Add(new EventInfo
+                    {
+                        PrinterIp = ip,
+                        EventType = "paper_low",
+                        Severity = "warning",
+                        Code = "PAPER_LOW",
+                        Description = "Papel baixo",
+                        OccurredAt = DateTime.UtcNow,
+                    });
+                }
+
+                if (lowToner)
+                {
+                    events.Add(new EventInfo
+                    {
+                        PrinterIp = ip,
+                        EventType = "toner_low_hw",
+                        Severity = "warning",
+                        Code = "TONER_LOW_HW",
+                        Description = "Toner baixo (sensor da impressora)",
+                        OccurredAt = DateTime.UtcNow,
+                    });
+                }
+
+                if (serviceRequested)
+                {
+                    events.Add(new EventInfo
+                    {
+                        PrinterIp = ip,
+                        EventType = "service_required",
+                        Severity = "warning",
+                        Code = "SERVICE_REQUIRED",
+                        Description = "Servico necessario (manutencao)",
+                        OccurredAt = DateTime.UtcNow,
+                    });
+                }
+            }
+        }
+        catch { }
 
         var counters = new CounterInfo
         {
