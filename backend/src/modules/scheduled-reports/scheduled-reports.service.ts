@@ -218,7 +218,7 @@ export class ScheduledReportsService {
   }
 
   private async generatePDF(clientName: string, printers: any[], date: Date): Promise<Buffer> {
-    const PDFDocument = (await import('pdfkit')).default;
+    const PDFDocument = require('pdfkit');
     const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 40 });
     const chunks: Buffer[] = [];
     doc.on('data', (chunk: Buffer) => chunks.push(chunk));
