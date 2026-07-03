@@ -177,7 +177,8 @@ export class ScheduledReportsService {
     }
 
     const xml = this.generateXML(report.client.name, printersData, now);
-    await this.sendEmail(report.email, report.client.name, xml, now);
+    const pdf = await this.generatePDF(report.client.name, printersData, now);
+    await this.sendEmail(report.email, report.client.name, xml, pdf, now);
   }
 
   private generateXML(clientName: string, printers: any[], date: Date): string {
@@ -216,20 +217,87 @@ export class ScheduledReportsService {
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  private async sendEmail(to: string, clientName: string, xml: string, date: Date) {
+  private async generatePDF(clientName: string, printers: any[], date: Date): Promise<Buffer> {
+    const PDFDocument = (await import('pdfkit')).default;
+    const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 40 });
+    const chunks: Buffer[] = [];
+    doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+
+    const done = new Promise<Buffer>((resolve) => {
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+    });
+
+    const totalPages = printers.reduce((s, p) => s + p.pagesThisMonth, 0);
+    const dateStr = date.toLocaleDateString('pt-BR');
+    const timeStr = date.toLocaleTimeString('pt-BR');
+
+    doc.fontSize(18).text('Relatorio de Contadores', { align: 'center' });
+    doc.moveDown(0.3);
+    doc.fontSize(10).fillColor('#666')
+      .text(`Cliente: ${clientName}  |  Gerado em: ${dateStr} ${timeStr}  |  Periodo: Ultimos 30 dias`, { align: 'center' })
+      .text(`Impressoras: ${printers.length}  |  Total de paginas: ${totalPages.toLocaleString('pt-BR')}`, { align: 'center' });
+    doc.moveDown(1);
+
+    const colWidths = [130, 110, 90, 90, 90, 70, 130];
+    const headers = ['Impressora', 'Modelo', 'Serial', 'IP', 'Cliente', 'Paginas', 'Ultima Coleta'];
+    const totalWidth = colWidths.reduce((s, w) => s + w, 0);
+    const startX = (doc.page.width - totalWidth) / 2;
+    let y = doc.y;
+
+    doc.fontSize(9).fillColor('#fff');
+    doc.rect(startX, y - 4, totalWidth, 18).fill('#3B82F6');
+    let x = startX;
+    for (let i = 0; i < headers.length; i++) {
+      doc.text(headers[i], x + 4, y, { width: colWidths[i] - 8, align: i === 5 ? 'right' : 'left' });
+      x += colWidths[i];
+    }
+    y += 20;
+
+    doc.fillColor('#333').fontSize(8);
+    for (let ri = 0; ri < printers.length; ri++) {
+      const p = printers[ri];
+      if (y > doc.page.height - 60) {
+        doc.addPage();
+        y = 40;
+      }
+      if (ri % 2 === 0) {
+        doc.save().rect(startX, y - 4, totalWidth, 16).fill('#F5F5F5').restore();
+        doc.fillColor('#333');
+      }
+      const row = [p.name, p.model, p.serial, p.ip, String(p.pagesThisMonth), p.lastCounterAt ? new Date(p.lastCounterAt).toLocaleString('pt-BR') : '-'];
+      x = startX;
+      for (let ci = 0; ci < row.length; ci++) {
+        doc.text(row[ci], x + 4, y, { width: colWidths[ci] - 8, align: ci === 4 ? 'right' : 'left' });
+        x += colWidths[ci];
+      }
+      y += 16;
+    }
+
+    doc.end();
+    return done;
+  }
+
+  private async sendEmail(to: string, clientName: string, xml: string, pdf: Buffer, date: Date) {
     const dateStr = date.toISOString().split('T')[0];
-    const filename = `contadores_${clientName.replace(/\s+/g, '_')}_${dateStr}.xml`;
+    const safeName = clientName.replace(/\s+/g, '_');
 
     await this.transporter.sendMail({
       from: this.config.get('SMTP_FROM', 'noreply@cloudspool.com.br'),
       to,
       subject: `Relatorio de Contadores - ${clientName} - ${dateStr}`,
-      text: `Segue em anexo o relatorio de contadores mensal da empresa ${clientName}.`,
-      attachments: [{
-        filename,
-        content: xml,
-        contentType: 'application/xml',
-      }],
+      text: `Segue em anexo o relatorio de contadores mensal da empresa ${clientName}.\n\nArquivos anexos:\n- ${safeName}_${dateStr}.xml (formato estruturado)\n- ${safeName}_${dateStr}.pdf (formato visual)`,
+      attachments: [
+        {
+          filename: `contadores_${safeName}_${dateStr}.xml`,
+          content: xml,
+          contentType: 'application/xml',
+        },
+        {
+          filename: `contadores_${safeName}_${dateStr}.pdf`,
+          content: pdf,
+          contentType: 'application/pdf',
+        },
+      ],
     });
   }
 }

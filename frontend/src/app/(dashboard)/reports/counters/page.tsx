@@ -129,6 +129,45 @@ ${rowsXml}
     URL.revokeObjectURL(url);
   };
 
+  const exportPDF = async () => {
+    const { default: jsPDF } = await import("jspdf");
+    const { default: autoTable } = await import("jspdf-autotable");
+
+    const doc = new jsPDF("landscape", "mm", "a4");
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    doc.setFontSize(18);
+    doc.text("Relatorio de Contadores", pageWidth / 2, 20, { align: "center" });
+
+    doc.setFontSize(10);
+    doc.text(`Gerado em: ${new Date().toLocaleString("pt-BR")}`, pageWidth / 2, 28, { align: "center" });
+    doc.text(`Total de impressoras: ${reportData.length} | Total de paginas: ${totalPages.toLocaleString("pt-BR")}`, pageWidth / 2, 34, { align: "center" });
+
+    const tableData = reportData.map((r) => [
+      r.printer,
+      r.model,
+      r.serial,
+      r.ip,
+      r.client,
+      r.pages.toLocaleString("pt-BR"),
+      r.lastCollect,
+    ]);
+
+    autoTable(doc, {
+      startY: 40,
+      head: [["Impressora", "Modelo", "Serial", "IP", "Cliente", "Total Paginas", "Ultima Coleta"]],
+      body: tableData,
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      columnStyles: {
+        5: { halign: "right", fontStyle: "bold" },
+      },
+    });
+
+    doc.save("relatorio-contadores.pdf");
+  };
+
   const escapeXml = (s: string) =>
     s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
@@ -221,6 +260,12 @@ ${rowsXml}
                 className="bg-amber-600 text-white px-4 py-2 rounded text-sm hover:bg-amber-700"
               >
                 Exportar XML
+              </button>
+              <button
+                onClick={exportPDF}
+                className="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700"
+              >
+                Exportar PDF
               </button>
             </div>
           </div>

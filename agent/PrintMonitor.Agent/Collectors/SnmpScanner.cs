@@ -611,6 +611,36 @@ public static class SnmpScanner
             }
         }
 
+        // Detect Canon from model name patterns (Canon doesn't always report manufacturer via SNMP)
+        if (string.IsNullOrEmpty(manufacturer) && !string.IsNullOrEmpty(model))
+        {
+            var m = model.ToUpperInvariant();
+            if (m.StartsWith("IR-ADV") || m.StartsWith("IR-") || m.StartsWith("IR1") ||
+                m.StartsWith("TM-") || m.StartsWith("MF-") || m.StartsWith("LBP") ||
+                m.StartsWith("DR-") || m.Contains("CANON") || m.StartsWith("ICMF") ||
+                m.StartsWith("IX") || m.StartsWith("I-SENSYS"))
+            {
+                manufacturer = "Canon";
+            }
+            else if (m.StartsWith("ECOSYS") || m.StartsWith("TASKALFA") || m.StartsWith("FS-") ||
+                     m.StartsWith("CS-") || m.StartsWith("KM-"))
+            {
+                manufacturer = "Kyocera";
+            }
+            else if (m.StartsWith("HP ") || m.StartsWith("HP COLOR") || m.StartsWith("HP LASERJET"))
+            {
+                manufacturer = "HP";
+            }
+            else if (m.StartsWith("EPSON") || m.StartsWith("WORKFORCE") || m.StartsWith("ECO"))
+            {
+                manufacturer = "Epson";
+            }
+            else if (m.StartsWith("BROTHER") || m.StartsWith("HL-") || m.StartsWith("MFC-") || m.StartsWith("DCP-"))
+            {
+                manufacturer = "Brother";
+            }
+        }
+
         // Ultimate fallback: try to extract model from sysDescr's first line using common printer patterns
         if (string.IsNullOrEmpty(model) && !string.IsNullOrEmpty(sysDescr))
         {
