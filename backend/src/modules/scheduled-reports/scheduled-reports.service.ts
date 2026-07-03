@@ -115,15 +115,18 @@ export class ScheduledReportsService {
   }
 
   private isReportDue(report: any, now: Date): boolean {
+    const tzOffset = parseInt(this.config.get('TIMEZONE_OFFSET_HOURS', '-3'), 10);
+    const localNow = new Date(now.getTime() + tzOffset * 60 * 60 * 1000);
+
     if (report.dayOfMonth > 28) {
-      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-      if (now.getDate() !== Math.min(report.dayOfMonth, lastDay)) return false;
+      const lastDay = new Date(localNow.getFullYear(), localNow.getMonth() + 1, 0).getDate();
+      if (localNow.getDate() !== Math.min(report.dayOfMonth, lastDay)) return false;
     } else {
-      if (now.getDate() !== report.dayOfMonth) return false;
+      if (localNow.getDate() !== report.dayOfMonth) return false;
     }
 
-    if (now.getHours() !== report.hour) return false;
-    if (now.getMinutes() !== report.minute) return false;
+    if (localNow.getHours() !== report.hour) return false;
+    if (localNow.getMinutes() !== report.minute) return false;
 
     if (report.lastRunAt) {
       const lastRun = new Date(report.lastRunAt);
