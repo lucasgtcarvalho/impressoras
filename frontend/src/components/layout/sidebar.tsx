@@ -170,7 +170,7 @@ export function Sidebar() {
         </button>
 
         <div className="px-3 py-3">
-          <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-[#1E293B] transition-all duration-200 group">
+          <Link href="/profile" className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-[#1E293B] transition-all duration-200 group">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
               {user?.name?.charAt(0)?.toUpperCase() || "U"}
             </div>
@@ -189,7 +189,7 @@ export function Sidebar() {
             >
               <LogOut className="w-4 h-4" />
             </button>
-          </div>
+          </Link>
         </div>
       </div>
     </aside>
