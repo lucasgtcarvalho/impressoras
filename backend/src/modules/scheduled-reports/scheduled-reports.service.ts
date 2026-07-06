@@ -248,7 +248,7 @@ export class ScheduledReportsService {
     doc.fontSize(9).fillColor('#ffffff');
     let x = startX;
     for (let i = 0; i < headers.length; i++) {
-      doc.text(headers[i], x + 4, y, { width: colWidths[i] - 8, align: i === 5 ? 'right' : 'left' });
+      doc.text(headers[i], x + 4, y, { width: colWidths[i] - 8, align: 'left' });
       x += colWidths[i];
     }
     y += 22;
@@ -270,7 +270,7 @@ export class ScheduledReportsService {
       const row = [p.name, p.model, p.serial, p.ip, String(p.pagesThisMonth), lastDate];
       x = startX;
       for (let ci = 0; ci < row.length; ci++) {
-        doc.text(row[ci], x + 4, y, { width: colWidths[ci] - 8, align: ci === 4 ? 'right' : 'left' });
+        doc.text(row[ci], x + 4, y, { width: colWidths[ci] - 8, align: 'left' });
         x += colWidths[ci];
       }
       y += 16;
