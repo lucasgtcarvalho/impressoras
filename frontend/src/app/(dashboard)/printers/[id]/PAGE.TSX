@@ -5,10 +5,13 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import api from "@/lib/api";
 import { formatDate, formatNumber } from "@/lib/utils";
+import { useAuthStore } from "@/stores/auth-store";
 
 export default function PrinterDetailPage() {
   const { id } = useParams();
   const router = useRouter();
+  const user = useAuthStore((s) => s.user);
+  const isSuperAdmin = user?.role === "super_admin";
   const [printer, setPrinter] = useState<any>(null);
   const [counterHistory, setCounterHistory] = useState<any[]>([]);
   const [supplyHistory, setSupplyHistory] = useState<any[]>([]);
@@ -117,16 +120,20 @@ export default function PrinterDetailPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {confirmingDelete ? (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-red-600 font-medium">Excluir impressora?</span>
-              <button onClick={handleDelete} className="px-3 py-1 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-700">Sim</button>
-              <button onClick={() => setConfirmingDelete(false)} className="px-3 py-1 text-sm font-medium bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Não</button>
-            </div>
-          ) : (
-            <button onClick={() => setConfirmingDelete(true)} className="px-3 py-1 text-sm font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50">
-              Excluir
-            </button>
+          {isSuperAdmin && (
+            <>
+              {confirmingDelete ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-red-600 font-medium">Excluir impressora?</span>
+                  <button onClick={handleDelete} className="px-3 py-1 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-700">Sim</button>
+                  <button onClick={() => setConfirmingDelete(false)} className="px-3 py-1 text-sm font-medium bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">Não</button>
+                </div>
+              ) : (
+                <button onClick={() => setConfirmingDelete(true)} className="px-3 py-1 text-sm font-medium text-red-600 border border-red-300 rounded-lg hover:bg-red-50">
+                  Excluir
+                </button>
+              )}
+            </>
           )}
           <span
             className={`px-3 py-1 text-sm font-medium rounded-full ${

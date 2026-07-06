@@ -52,7 +52,7 @@ export class ClientsController {
   }
 
   @Delete(':id')
-  @Roles('super_admin', 'admin')
+  @Roles('super_admin')
   remove(@Param('id') id: string) {
     return this.clientsService.remove(id);
   }

@@ -186,7 +186,7 @@ export class ScheduledReportsService {
     xml += '<RelatorioContadores>\n';
     xml += `  <Cabecalho>\n`;
     xml += `    <Cliente>${this.escapeXml(clientName)}</Cliente>\n`;
-    xml += `    <DataGeracao>${date.toISOString()}</DataGeracao>\n`;
+    xml += `    <DataGeracao>${this.getLocalDate(date).toISOString()}</DataGeracao>\n`;
     xml += `    <Periodo>Ultimos 30 dias</Periodo>\n`;
     xml += `  </Cabecalho>\n`;
     xml += `  <Impressoras>\n`;
@@ -199,7 +199,7 @@ export class ScheduledReportsService {
       xml += `      <IP>${p.ip}</IP>\n`;
       xml += `      <ContadorTotal>${p.totalPages}</ContadorTotal>\n`;
       xml += `      <PaginasPeriodo>${p.pagesThisMonth}</PaginasPeriodo>\n`;
-      xml += `      <UltimoContador>${p.lastCounterAt || 'N/A'}</UltimoContador>\n`;
+      xml += `      <UltimoContador>${p.lastCounterAt ? this.getLocalDate(new Date(p.lastCounterAt)).toISOString() : 'N/A'}</UltimoContador>\n`;
       xml += `    </Impressora>\n`;
     }
 
@@ -217,6 +217,11 @@ export class ScheduledReportsService {
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  private getLocalDate(date: Date): Date {
+    const tzOffset = parseInt(this.config.get('TIMEZONE_OFFSET_HOURS', '-3'), 10);
+    return new Date(date.getTime() + tzOffset * 60 * 60 * 1000);
+  }
+
   private async generatePDF(clientName: string, printers: any[], date: Date): Promise<Buffer> {
     const PDFDocument = require('pdfkit');
     const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 40 });
@@ -227,8 +232,9 @@ export class ScheduledReportsService {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
     });
 
-    const dateStr = date.toLocaleDateString('pt-BR');
-    const timeStr = date.toLocaleTimeString('pt-BR');
+    const localDate = this.getLocalDate(date);
+    const dateStr = localDate.toLocaleDateString('pt-BR');
+    const timeStr = localDate.toLocaleTimeString('pt-BR');
 
     doc.fontSize(18).text('Relatorio de Contadores', { align: 'center' });
     doc.moveDown(0.3);
@@ -265,7 +271,7 @@ export class ScheduledReportsService {
         doc.fillColor('#333');
       }
       const lastDate = p.lastCounterAt
-        ? new Date(p.lastCounterAt).toLocaleDateString('pt-BR') + ' ' + new Date(p.lastCounterAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        ? this.getLocalDate(new Date(p.lastCounterAt)).toLocaleDateString('pt-BR') + ' ' + this.getLocalDate(new Date(p.lastCounterAt)).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
         : '-';
       const row = [p.name, p.model, p.serial, p.ip, String(p.pagesThisMonth), lastDate];
       x = startX;
@@ -281,7 +287,8 @@ export class ScheduledReportsService {
   }
 
   private async sendEmail(to: string, clientName: string, xml: string, pdf: Buffer, date: Date) {
-    const dateStr = date.toISOString().split('T')[0];
+    const localDate = this.getLocalDate(date);
+    const dateStr = localDate.toISOString().split('T')[0];
     const safeName = clientName.replace(/\s+/g, '_');
     const recipients = to.split(',').map(e => e.trim()).filter(Boolean);
 

@@ -10,6 +10,7 @@ import { formatDate, formatNumber } from "@/lib/utils";
 export default function ClientsPage() {
   const user = useAuthStore((s) => s.user);
   const isAdmin = user?.role === "super_admin" || user?.role === "admin";
+  const isSuperAdmin = user?.role === "super_admin";
   const [clients, setClients] = useState<Client[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -97,7 +98,7 @@ export default function ClientsPage() {
                 <th className="text-center px-4 py-3 text-sm font-medium text-gray-600">Impressoras</th>
                 <th className="text-center px-4 py-3 text-sm font-medium text-gray-600">Alertas</th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">Criado em</th>
-                {isAdmin && <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">Acoes</th>}
+                {isSuperAdmin && <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">Acoes</th>}
               </tr>
             </thead>
             <tbody>
@@ -146,7 +147,7 @@ export default function ClientsPage() {
                   <td className="px-4 py-3 text-sm text-gray-500">
                     {formatDate(client.createdAt)}
                   </td>
-                  {isAdmin && (
+                  {isSuperAdmin && (
                     <td className="px-4 py-3 text-right">
                       <button
                         onClick={() => handleDelete(client)}

@@ -23,6 +23,9 @@ public static class SnmpScanner
     private static readonly ObjectIdentifier HrDeviceStatus = new(".1.3.6.1.2.1.25.3.2.1.2");
     private static readonly ObjectIdentifier HrPrinterDetectedErrorState = new(".1.3.6.1.2.1.25.3.5.1.2");
 
+    // Printer MIB (RFC 3805) Alert Table
+    private static readonly ObjectIdentifier PrtAlertTable = new(".1.3.6.1.2.1.43.18.1");
+
     // Vendor-specific counter OIDs
     private static readonly ObjectIdentifier HpTotalPages = new(".1.3.6.1.4.1.11.2.3.9.1.1.7.0");
     private static readonly ObjectIdentifier HpMonoPages = new(".1.3.6.1.4.1.11.2.3.9.4.2.1.1.4.6.1");
@@ -1239,6 +1242,25 @@ public static class SnmpScanner
         }
         catch { }
 
+        // Fallback: detect errors via prtAlertTable (RFC 3805 Printer MIB)
+        if (!events.Any())
+        {
+            try
+            {
+                var ct2 = new CancellationTokenSource(NormalTimeout).Token;
+                var alertResults = new List<Variable>();
+                await Messenger.WalkAsync(
+                    workingVersion, endpoint, communityOctet,
+                    PrtAlertTable, alertResults, WalkMode.WithinSubtree, ct2);
+
+                if (alertResults.Any())
+                {
+                    ParsePrtAlertTable(alertResults, events, printer, ip);
+                }
+            }
+            catch { }
+        }
+
         var counters = new CounterInfo
         {
             PrinterIp = ip,
@@ -1391,5 +1413,83 @@ public static class SnmpScanner
         // Internal codes are typically short alphanumeric like "AK88028918" (no spaces, 6-15 chars)
         return !model.Contains(' ') &&
                System.Text.RegularExpressions.Regex.IsMatch(model, @"^[A-Z0-9]{6,15}$");
+    }
+
+    private static void ParsePrtAlertTable(List<Variable> walkResults, List<EventInfo> events, PrinterInfo printer, string ip)
+    {
+        var rows = new Dictionary<string, Dictionary<int, string>>();
+
+        foreach (var v in walkResults)
+        {
+            var nums = v.Id.ToNumerical();
+            // PrtAlertTable base is 1.3.6.1.2.1.43.18.1 (nums[0..8])
+            // Column = nums[8], row index = nums[9..]
+            if (nums.Length < 10) continue;
+
+            int column = (int)nums[8];
+            string rowKey = string.Join(".", nums.Skip(9));
+
+            if (!rows.ContainsKey(rowKey))
+                rows[rowKey] = new Dictionary<int, string>();
+
+            rows[rowKey][column] = v.Data.ToString() ?? "";
+        }
+
+        foreach (var row in rows)
+        {
+            // Column 1 = prtAlertCode, Column 2 = prtAlertSeverityLevel, Column 4 = prtAlertDescription
+            if (!row.Value.TryGetValue(1, out var codeStr) || !int.TryParse(codeStr, out int alertCode))
+                continue;
+
+            row.Value.TryGetValue(4, out var description);
+
+            // Skip "other" (1) and informational
+            if (alertCode <= 1) continue;
+
+            string? eventType = alertCode switch
+            {
+                2 => "low_paper",
+                3 => "paper_empty",
+                4 => "low_toner",
+                5 => "toner_empty",
+                6 => "door_open",
+                8 => "paper_jam",
+                9 => "offline",
+                10 => "service_required",
+                11 => "input_tray_missing",
+                12 => "output_tray_full",
+                13 => "marker_supply_missing",
+                14 => "output_tray_almost_full",
+                15 => "marker_supply_low",
+                16 => "marker_supply_empty",
+                _ => null,
+            };
+
+            if (eventType == null) continue;
+
+            string severity = alertCode switch
+            {
+                3 or 5 or 6 or 8 or 9 or 10 or 13 or 16 => "critical",
+                _ => "warning",
+            };
+
+            string desc = !string.IsNullOrWhiteSpace(description) ? description : eventType;
+
+            events.Add(new EventInfo
+            {
+                PrinterIp = ip,
+                EventType = eventType,
+                Severity = severity,
+                Code = $"PRT_ALERT_{alertCode}",
+                Description = desc,
+                OccurredAt = DateTime.UtcNow,
+            });
+
+            if (severity == "critical" && printer.Status != "error")
+            {
+                printer.Status = eventType == "offline" ? "offline" : "error";
+                printer.StatusDetail = eventType;
+            }
+        }
     }
 }

@@ -46,7 +46,6 @@ export class AgentsService {
           tokenExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
           osInfo: dto.osInfo,
           localIp: dto.localIp,
-          macAddress: dto.macAddress,
           agentVersion: dto.version,
           lastContactAt: new Date(),
         },
@@ -145,6 +144,7 @@ export class AgentsService {
 
     if (dto.printers?.length) {
       for (const p of dto.printers) {
+        console.log(`[SYNC] Printer ${p.ipAddress}: macAddress=${p.macAddress}, model=${p.model}, serial=${p.serialNumber}`);
         const matchConditions: any[] = [];
         if (p.serialNumber) matchConditions.push({ serialNumber: p.serialNumber });
         if (p.ipAddress) matchConditions.push({ ipAddress: p.ipAddress });
@@ -163,7 +163,6 @@ export class AgentsService {
           name: p.name || p.hostname || p.ipAddress,
           ipAddress: p.ipAddress,
           hostname: p.hostname,
-          macAddress: p.macAddress,
           location: p.location,
           firmwareVersion: p.firmwareVersion,
           status: ((p.status && ['online', 'offline', 'error', 'warning'].includes(p.status)) ? p.status : 'online') as any,
@@ -173,6 +172,7 @@ export class AgentsService {
           lastContactAt: now,
           discoveryMethod: 'snmp',
         };
+        if (p.macAddress) printerData.macAddress = p.macAddress;
         if (p.manufacturer) printerData.manufacturer = p.manufacturer;
         if (p.model) printerData.model = p.model;
         if (p.serialNumber) printerData.serialNumber = p.serialNumber;
@@ -266,6 +266,7 @@ export class AgentsService {
                   printerId: printer.id,
                   title: `Toner baixo: ${printer.name}`,
                   description: `Toner ${supply.type} em ${supply.levelPercent}%`,
+                  eventType: 'toner_low',
                   severity: 'warning',
                   status: 'open',
                   source: 'agent',

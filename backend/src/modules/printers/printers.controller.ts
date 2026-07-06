@@ -47,6 +47,7 @@ export class PrintersController {
   }
 
   @Delete(':id')
+  @Roles('super_admin')
   remove(@Param('id') id: string) {
     return this.printersService.remove(id);
   }

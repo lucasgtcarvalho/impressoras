@@ -37,19 +37,9 @@ export default function AlertsPage() {
       </div>
 
       <div className="flex gap-2">
-        {["open", "acknowledged", "resolved"].map((s) => (
-          <button
-            key={s}
-            onClick={() => setFilter(s)}
-            className={`px-3 py-1.5 text-sm rounded-md ${
-              filter === s
-                ? "bg-blue-100 text-blue-700"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            {s === "open" ? "Abertos" : s === "acknowledged" ? "Reconhecidos" : "Resolvidos"}
-          </button>
-        ))}
+        <button className="px-3 py-1.5 text-sm rounded-md bg-blue-100 text-blue-700">
+          Abertos
+        </button>
       </div>
 
       {loading ? (
