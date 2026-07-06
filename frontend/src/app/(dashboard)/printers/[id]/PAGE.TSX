@@ -11,6 +11,7 @@ export default function PrinterDetailPage() {
   const router = useRouter();
   const [printer, setPrinter] = useState<any>(null);
   const [counterHistory, setCounterHistory] = useState<any[]>([]);
+  const [supplyHistory, setSupplyHistory] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("info");
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState("");
@@ -20,6 +21,10 @@ export default function PrinterDetailPage() {
     loadData();
   }, [id]);
 
+  useEffect(() => {
+    if (activeTab === "supplies") loadSupplyHistory();
+  }, [activeTab]);
+
   const loadData = async () => {
     const [printerRes, counterRes] = await Promise.all([
       api.get(`/printers/${id}`),
@@ -27,6 +32,14 @@ export default function PrinterDetailPage() {
     ]);
     setPrinter(printerRes.data);
     setCounterHistory(counterRes.data || []);
+  };
+
+  const loadSupplyHistory = async () => {
+    if (supplyHistory.length > 0) return;
+    try {
+      const res = await api.get(`/printers/${id}/supply-history?limit=200`);
+      setSupplyHistory(res.data || []);
+    } catch {}
   };
 
   if (!printer) {
@@ -172,45 +185,138 @@ export default function PrinterDetailPage() {
         </div>
       )}
 
-      {activeTab === "supplies" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {printer.supplyLevels?.slice(0, 8).map((supply: any, i: number) => (
-            <div key={i} className="card-shadow p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium capitalize">
-                  {supply.supplyType.replace("_", " ")}
-                </span>
-                <span
-                  className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                    supply.levelPercent > 20
-                      ? "bg-green-100 text-green-700"
-                      : supply.levelPercent > 10
-                      ? "bg-yellow-100 text-yellow-700"
-                      : "bg-red-100 text-red-700"
-                  }`}
-                >
-                  {supply.levelPercent}%
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className={`h-2 rounded-full ${
-                    supply.levelPercent > 20
-                      ? "bg-green-500"
-                      : supply.levelPercent > 10
-                      ? "bg-yellow-500"
-                      : "bg-red-500"
-                  }`}
-                  style={{ width: `${supply.levelPercent}%` }}
-                />
-              </div>
-              {supply.supplyName && (
-                <p className="text-xs text-gray-500 mt-1">{supply.supplyName}</p>
+      {activeTab === "supplies" && (() => {
+        const latestByType = new Map<string, any>();
+        (printer.supplyLevels || []).forEach((s: any) => {
+          if (!latestByType.has(s.supplyType)) latestByType.set(s.supplyType, s);
+        });
+        const uniqueSupplies = Array.from(latestByType.values());
+
+        const historyByType = new Map<string, { date: string; level: number }[]>();
+        supplyHistory.forEach((s: any) => {
+          if (!historyByType.has(s.supplyType)) historyByType.set(s.supplyType, []);
+          historyByType.get(s.supplyType)!.push({
+            date: new Date(s.collectedAt).toLocaleDateString("pt-BR"),
+            level: s.levelPercent ?? 0,
+          });
+        });
+
+        const tonerKey = [...historyByType.keys()].find(k => k.startsWith("toner"));
+        const tonerData = tonerKey ? historyByType.get(tonerKey)! : [];
+
+        const replacements: { index: number; date: string }[] = [];
+        for (let i = 1; i < tonerData.length; i++) {
+          if (tonerData[i].level > tonerData[i - 1].level + 30) {
+            replacements.push({ index: i, date: tonerData[i].date });
+          }
+        }
+
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {uniqueSupplies.map((supply: any, i: number) => (
+                <div key={i} className="card-shadow p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium capitalize">
+                      {supply.supplyType.replace("_", " ")}
+                    </span>
+                    <span
+                      className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                        supply.levelPercent > 20
+                          ? "bg-green-100 text-green-700"
+                          : supply.levelPercent > 10
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-red-100 text-red-700"
+                      }`}
+                    >
+                      {supply.levelPercent}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className={`h-2 rounded-full ${
+                        supply.levelPercent > 20
+                          ? "bg-green-500"
+                          : supply.levelPercent > 10
+                          ? "bg-yellow-500"
+                          : "bg-red-500"
+                      }`}
+                      style={{ width: `${supply.levelPercent}%` }}
+                    />
+                  </div>
+                  {supply.supplyName && (
+                    <p className="text-xs text-gray-500 mt-1">{supply.supplyName}</p>
+                  )}
+                </div>
+              ))}
+              {uniqueSupplies.length === 0 && (
+                <p className="text-sm text-gray-500">Nenhum suprimento registrado</p>
               )}
             </div>
-          ))}
-        </div>
-      )}
+
+            {tonerData.length > 1 && (
+              <div className="card-shadow p-4">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                  Historico de Nivel do Toner
+                </h3>
+                <div className="relative">
+                  <svg viewBox={`0 0 ${Math.max(tonerData.length * 40, 400)} 200`} className="w-full h-48">
+                    <defs>
+                      <linearGradient id="tonerGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.3" />
+                        <stop offset="100%" stopColor="#3B82F6" stopOpacity="0.05" />
+                      </linearGradient>
+                    </defs>
+                    <polygon
+                      points={tonerData.map((d, i) => {
+                        const x = (i / (tonerData.length - 1)) * Math.max(tonerData.length * 40, 400);
+                        const y = 180 - (d.level / 100) * 160;
+                        return `${x},${y}`;
+                      }).join(" ") + ` ${Math.max(tonerData.length * 40, 400)},180 0,180`}
+                      fill="url(#tonerGrad)"
+                    />
+                    <polyline
+                      points={tonerData.map((d, i) => {
+                        const x = (i / (tonerData.length - 1)) * Math.max(tonerData.length * 40, 400);
+                        const y = 180 - (d.level / 100) * 160;
+                        return `${x},${y}`;
+                      }).join(" ")}
+                      fill="none"
+                      stroke="#3B82F6"
+                      strokeWidth="2"
+                    />
+                    {tonerData.map((d, i) => {
+                      const x = (i / (tonerData.length - 1)) * Math.max(tonerData.length * 40, 400);
+                      const y = 180 - (d.level / 100) * 160;
+                      const isReplacement = replacements.some(r => r.index === i);
+                      return (
+                        <g key={i}>
+                          <circle cx={x} cy={y} r={isReplacement ? 6 : 3} fill={isReplacement ? "#EF4444" : "#3B82F6"} stroke="#fff" strokeWidth="1.5" />
+                          {isReplacement && (
+                            <text x={x} y={y - 12} textAnchor="middle" fontSize="9" fill="#EF4444" fontWeight="bold">Troca</text>
+                          )}
+                        </g>
+                      );
+                    })}
+                    {[0, 25, 50, 75, 100].map(v => (
+                      <g key={v}>
+                        <line x1="0" y1={180 - (v / 100) * 160} x2={Math.max(tonerData.length * 40, 400)} y2={180 - (v / 100) * 160} stroke="#E5E7EB" strokeWidth="0.5" strokeDasharray="4" />
+                        <text x="-5" y={184 - (v / 100) * 160} textAnchor="end" fontSize="9" fill="#9CA3AF">{v}%</text>
+                      </g>
+                    ))}
+                  </svg>
+                  {replacements.length > 0 && (
+                    <p className="text-xs text-gray-500 mt-2">
+                      <span className="inline-block w-2 h-2 bg-red-500 rounded-full mr-1" />
+                      {replacements.length} troca{replacements.length > 1 ? "s" : ""} detectada{replacements.length > 1 ? "s" : ""}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {activeTab === "counters" && (
         <div className="card-shadow overflow-hidden">

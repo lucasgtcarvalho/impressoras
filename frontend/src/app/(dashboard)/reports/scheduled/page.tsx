@@ -114,7 +114,7 @@ export default function ScheduledReportsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Relatorios Agendados</h1>
-          <p className="text-sm text-gray-500 mt-1">Envio automatico mensal de contadores por email em XML</p>
+          <p className="text-sm text-gray-500 mt-1">Envio automatico mensal de contadores por email em XML e PDF</p>
         </div>
         <button onClick={openCreate} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700">
           Novo Agendamento
@@ -131,7 +131,6 @@ export default function ScheduledReportsPage() {
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/80">
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Nome</th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Cliente</th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Email</th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Dia</th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-500">Horario</th>
@@ -144,7 +143,6 @@ export default function ScheduledReportsPage() {
               {reports.map((r) => (
                 <tr key={r.id} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="px-4 py-3 text-sm font-medium">{r.name}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{r.client?.name}</td>
                   <td className="px-4 py-3 text-sm text-gray-600">{r.email}</td>
                   <td className="px-4 py-3 text-sm text-gray-600">Dia {r.dayOfMonth}</td>
                   <td className="px-4 py-3 text-sm text-gray-600">{padTime(r.hour)}:{padTime(r.minute)}</td>
@@ -153,7 +151,7 @@ export default function ScheduledReportsPage() {
                       {r.isActive ? "Ativo" : "Inativo"}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{r.lastRunAt ? new Date(r.lastRunAt).toLocaleDateString("pt-BR") : "-"}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{r.lastRunAt ? new Date(r.lastRunAt).toLocaleString("pt-BR") : "-"}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <button onClick={() => openEdit(r)} className="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded">Editar</button>
@@ -189,8 +187,9 @@ export default function ScheduledReportsPage() {
                   className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md" />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Email de Destino *</label>
-                <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
+                <label className="block text-xs text-gray-500 mb-1">Emails de Destino (separados por virgula) *</label>
+                <input type="text" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  placeholder="email1@empresa.com, email2@empresa.com"
                   className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md" />
               </div>
               <div className="grid grid-cols-3 gap-3">

@@ -21,7 +21,7 @@ const reports = [
   {
     href: "/reports/scheduled",
     title: "Agendados",
-    description: "Envio automatico mensal de relatorio de contadores por email em XML",
+    description: "Envio automatico mensal de contadores por email em XML e PDF",
   },
 ];
 

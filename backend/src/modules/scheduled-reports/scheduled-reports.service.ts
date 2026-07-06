@@ -227,31 +227,31 @@ export class ScheduledReportsService {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
     });
 
-    const totalPages = printers.reduce((s, p) => s + p.pagesThisMonth, 0);
     const dateStr = date.toLocaleDateString('pt-BR');
     const timeStr = date.toLocaleTimeString('pt-BR');
 
     doc.fontSize(18).text('Relatorio de Contadores', { align: 'center' });
     doc.moveDown(0.3);
     doc.fontSize(10).fillColor('#666')
-      .text(`Cliente: ${clientName}  |  Gerado em: ${dateStr} ${timeStr}  |  Periodo: Ultimos 30 dias`, { align: 'center' })
-      .text(`Impressoras: ${printers.length}  |  Total de paginas: ${totalPages.toLocaleString('pt-BR')}`, { align: 'center' });
+      .text(`Cliente: ${clientName}  |  Periodo: Ultimos 30 dias`, { align: 'center' })
+      .text(`Gerado em: ${dateStr} ${timeStr}`, { align: 'center' })
+      .text(`Impressoras: ${printers.length}`, { align: 'center' });
     doc.moveDown(1);
 
-    const colWidths = [130, 110, 90, 90, 90, 70, 130];
+    const colWidths = [110, 110, 90, 90, 90, 70, 150];
     const headers = ['Impressora', 'Modelo', 'Serial', 'IP', 'Cliente', 'Paginas', 'Ultima Coleta'];
     const totalWidth = colWidths.reduce((s, w) => s + w, 0);
     const startX = (doc.page.width - totalWidth) / 2;
     let y = doc.y;
 
-    doc.fontSize(9).fillColor('#fff');
-    doc.rect(startX, y - 4, totalWidth, 18).fill('#3B82F6');
+    doc.rect(startX, y - 4, totalWidth, 20).fill('#3B82F6');
+    doc.fontSize(9).fillColor('#ffffff');
     let x = startX;
     for (let i = 0; i < headers.length; i++) {
       doc.text(headers[i], x + 4, y, { width: colWidths[i] - 8, align: i === 5 ? 'right' : 'left' });
       x += colWidths[i];
     }
-    y += 20;
+    y += 22;
 
     doc.fillColor('#333').fontSize(8);
     for (let ri = 0; ri < printers.length; ri++) {
@@ -264,7 +264,10 @@ export class ScheduledReportsService {
         doc.save().rect(startX, y - 4, totalWidth, 16).fill('#F5F5F5').restore();
         doc.fillColor('#333');
       }
-      const row = [p.name, p.model, p.serial, p.ip, String(p.pagesThisMonth), p.lastCounterAt ? new Date(p.lastCounterAt).toLocaleString('pt-BR') : '-'];
+      const lastDate = p.lastCounterAt
+        ? new Date(p.lastCounterAt).toLocaleDateString('pt-BR') + ' ' + new Date(p.lastCounterAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+        : '-';
+      const row = [p.name, p.model, p.serial, p.ip, String(p.pagesThisMonth), lastDate];
       x = startX;
       for (let ci = 0; ci < row.length; ci++) {
         doc.text(row[ci], x + 4, y, { width: colWidths[ci] - 8, align: ci === 4 ? 'right' : 'left' });
@@ -280,10 +283,11 @@ export class ScheduledReportsService {
   private async sendEmail(to: string, clientName: string, xml: string, pdf: Buffer, date: Date) {
     const dateStr = date.toISOString().split('T')[0];
     const safeName = clientName.replace(/\s+/g, '_');
+    const recipients = to.split(',').map(e => e.trim()).filter(Boolean);
 
     await this.transporter.sendMail({
       from: this.config.get('SMTP_FROM', 'noreply@cloudspool.com.br'),
-      to,
+      to: recipients.join(', '),
       subject: `Relatorio de Contadores - ${clientName} - ${dateStr}`,
       text: `Segue em anexo o relatorio de contadores mensal da empresa ${clientName}.\n\nArquivos anexos:\n- ${safeName}_${dateStr}.xml (formato estruturado)\n- ${safeName}_${dateStr}.pdf (formato visual)`,
       attachments: [

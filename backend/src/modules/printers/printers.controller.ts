@@ -66,6 +66,11 @@ export class PrintersController {
     return this.printersService.getSupplies(id);
   }
 
+  @Get(':id/supply-history')
+  getSupplyHistory(@Param('id') id: string, @Query('limit') limit?: number) {
+    return this.printersService.getSupplyHistory(id, limit);
+  }
+
   @Get(':id/events')
   getEvents(
     @Param('id') id: string,

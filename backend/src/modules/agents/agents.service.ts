@@ -250,7 +250,7 @@ export class AgentsService {
             },
           });
 
-          if (supply.levelPercent !== undefined && supply.levelPercent <= 20) {
+          if (supply.levelPercent !== undefined && supply.levelPercent <= 5) {
             const existingAlert = await this.prisma.alert.findFirst({
               where: {
                 clientId,

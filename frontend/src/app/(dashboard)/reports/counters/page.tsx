@@ -81,6 +81,16 @@ export default function CountersReport() {
 
   const totalPages = reportData.reduce((s, r) => s + r.pages, 0);
 
+  const getClientSuffix = () => {
+    if (mode === "client" && selectedClient) {
+      const client = clients.find(c => c.id === selectedClient);
+      if (client) return client.name.replace(/\s+/g, "_");
+    }
+    const unique = [...new Set(reportData.map(r => r.client))].filter(c => c !== "-");
+    if (unique.length === 1) return unique[0].replace(/\s+/g, "_");
+    return "";
+  };
+
   const exportCSV = () => {
     const header = "Impressora;Modelo;Serial;IP;Cliente;Total de Paginas;Ultima Coleta";
     const rows = reportData.map(
@@ -91,8 +101,9 @@ export default function CountersReport() {
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
+    const suffix = getClientSuffix();
     a.href = url;
-    a.download = "relatorio-contadores.csv";
+    a.download = suffix ? `relatorio-contadores_${suffix}.csv` : "relatorio-contadores.csv";
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -123,8 +134,9 @@ ${rowsXml}
     const blob = new Blob([xml], { type: "application/xml;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
+    const suffix = getClientSuffix();
     a.href = url;
-    a.download = "relatorio-contadores.xml";
+    a.download = suffix ? `relatorio-contadores_${suffix}.xml` : "relatorio-contadores.xml";
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -141,7 +153,7 @@ ${rowsXml}
 
     doc.setFontSize(10);
     doc.text(`Gerado em: ${new Date().toLocaleString("pt-BR")}`, pageWidth / 2, 28, { align: "center" });
-    doc.text(`Total de impressoras: ${reportData.length} | Total de paginas: ${totalPages.toLocaleString("pt-BR")}`, pageWidth / 2, 34, { align: "center" });
+    doc.text(`Total de impressoras: ${reportData.length}`, pageWidth / 2, 34, { align: "center" });
 
     const tableData = reportData.map((r) => [
       r.printer,
@@ -165,7 +177,8 @@ ${rowsXml}
       },
     });
 
-    doc.save("relatorio-contadores.pdf");
+    const suffix = getClientSuffix();
+    doc.save(suffix ? `relatorio-contadores_${suffix}.pdf` : "relatorio-contadores.pdf");
   };
 
   const escapeXml = (s: string) =>

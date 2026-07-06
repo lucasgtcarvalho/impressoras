@@ -7,7 +7,7 @@ export class CreateScheduledReportDto {
   @IsString()
   name: string;
 
-  @IsEmail()
+  @IsString()
   email: string;
 
   @IsInt()

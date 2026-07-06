@@ -1,8 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../database/prisma.service';
 
 @Injectable()
 export class PrintersService {
+  private readonly logger = new Logger(PrintersService.name);
   constructor(private prisma: PrismaService) {}
 
   private computeStatus(lastContactAt: Date | null, dbStatus: string): string {
@@ -144,6 +146,14 @@ export class PrintersService {
     });
   }
 
+  async getSupplyHistory(id: string, limit = 100) {
+    return this.prisma.printerSupplyLevel.findMany({
+      where: { printerId: id },
+      orderBy: { collectedAt: 'asc' },
+      take: limit,
+    });
+  }
+
   async getEvents(id: string, params: { severity?: string; isResolved?: boolean; page?: number; limit?: number }) {
     const page = params.page || 1;
     const limit = Math.min(params.limit || 50, 100);
@@ -167,5 +177,21 @@ export class PrintersService {
       data,
       meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
+  }
+
+  @Cron(CronExpression.EVERY_MINUTE)
+  async markStalePrintersOffline() {
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const result = await this.prisma.printer.updateMany({
+      where: {
+        isActive: true,
+        status: { not: 'offline' },
+        lastContactAt: { lt: fiveMinutesAgo },
+      },
+      data: { status: 'offline' },
+    });
+    if (result.count > 0) {
+      this.logger.log(`Marked ${result.count} printer(s) as offline (stale)`);
+    }
   }
 }
