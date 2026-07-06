@@ -238,8 +238,8 @@ export class ScheduledReportsService {
       .text(`Impressoras: ${printers.length}`, { align: 'center' });
     doc.moveDown(1);
 
-    const colWidths = [110, 110, 90, 90, 90, 70, 150];
-    const headers = ['Impressora', 'Modelo', 'Serial', 'IP', 'Cliente', 'Paginas', 'Ultima Coleta'];
+    const colWidths = [120, 110, 90, 90, 80, 150];
+    const headers = ['Impressora', 'Modelo', 'Serial', 'IP', 'Paginas', 'Ultima Coleta'];
     const totalWidth = colWidths.reduce((s, w) => s + w, 0);
     const startX = (doc.page.width - totalWidth) / 2;
     let y = doc.y;
