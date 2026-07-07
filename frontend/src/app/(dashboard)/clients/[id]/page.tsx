@@ -78,7 +78,6 @@ export default function ClientDetailPage() {
     { label: "Offline", value: stats?.offlinePrinters || 0, color: "text-red-600" },
     { label: "Alertas", value: stats?.openAlerts || 0 },
     { label: "Agentes", value: stats?.activeAgents || 0 },
-    { label: "Jobs Mes", value: formatNumber(stats?.totalJobsThisMonth || 0) },
   ];
 
   const severityBadge = (s: string) => {

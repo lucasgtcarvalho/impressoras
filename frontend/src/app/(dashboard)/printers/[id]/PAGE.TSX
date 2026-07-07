@@ -19,6 +19,7 @@ export default function PrinterDetailPage() {
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [events, setEvents] = useState<any[]>([]);
 
   useEffect(() => {
     loadData();
@@ -26,6 +27,7 @@ export default function PrinterDetailPage() {
 
   useEffect(() => {
     if (activeTab === "supplies") loadSupplyHistory();
+    if (activeTab === "events") loadEvents();
   }, [activeTab]);
 
   const loadData = async () => {
@@ -42,6 +44,13 @@ export default function PrinterDetailPage() {
     try {
       const res = await api.get(`/printers/${id}/supply-history?limit=200`);
       setSupplyHistory(res.data || []);
+    } catch {}
+  };
+
+  const loadEvents = async () => {
+    try {
+      const res = await api.get(`/printers/${id}/events?limit=50`);
+      setEvents(res.data?.data || []);
     } catch {}
   };
 
@@ -176,7 +185,7 @@ export default function PrinterDetailPage() {
             { label: "Número de Série", value: printer.serialNumber },
             { label: "IP", value: printer.ipAddress },
             { label: "MAC", value: printer.macAddress },
-            { label: "Hostname", value: printer.hostname },
+            { label: "Hostname", value: printer.hostname || printer.name },
             { label: "Localização", value: printer.location },
             { label: "Firmware", value: printer.firmwareVersion },
             { label: "Mono/Color", value: printer.isMonochrome ? "Mono" : "Color" },
@@ -351,8 +360,49 @@ export default function PrinterDetailPage() {
       )}
 
       {activeTab === "events" && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6 text-center text-gray-500">
-          <p>Histórico de eventos disponível em breve</p>
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          {events.length === 0 ? (
+            <div className="p-6 text-center text-gray-500">Nenhum evento registrado</div>
+          ) : (
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Data</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Severidade</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Descrição</th>
+                </tr>
+              </thead>
+              <tbody>
+                {events.map((e) => (
+                  <tr key={e.id} className="border-t border-gray-100">
+                    <td className="px-4 py-3 text-sm text-gray-500">{formatDate(e.occurredAt)}</td>
+                    <td className="px-4 py-3 text-sm">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        e.eventType === "paper_jam" ? "bg-red-100 text-red-700" :
+                        e.eventType === "paper_empty" ? "bg-orange-100 text-orange-700" :
+                        e.eventType === "toner_empty" ? "bg-yellow-100 text-yellow-700" :
+                        e.eventType === "door_open" ? "bg-purple-100 text-purple-700" :
+                        "bg-gray-100 text-gray-700"
+                      }`}>
+                        {e.eventType}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                        e.severity === "critical" ? "bg-red-100 text-red-700" :
+                        e.severity === "warning" ? "bg-yellow-100 text-yellow-700" :
+                        "bg-gray-100 text-gray-700"
+                      }`}>
+                        {e.severity}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">{e.description || e.code}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
     </div>

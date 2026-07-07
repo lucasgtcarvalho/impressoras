@@ -46,6 +46,11 @@ public class SnmpCollectorService
 
                 if (printerInfo != null)
                 {
+                    // Use cached hostname/name as fallback if SNMP scan returned empty
+                    if (string.IsNullOrEmpty(printerInfo.Hostname) && !string.IsNullOrEmpty(printer.Hostname))
+                        printerInfo.Hostname = printer.Hostname;
+                    if (string.IsNullOrEmpty(printerInfo.Name) && !string.IsNullOrEmpty(printer.Name))
+                        printerInfo.Name = printer.Name;
                     printersData.Add(printerInfo);
                     _db.UpdatePrinterCache(printer.Ip, printerInfo);
                 }

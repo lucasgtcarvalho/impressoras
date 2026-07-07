@@ -144,7 +144,7 @@ export class AgentsService {
 
     if (dto.printers?.length) {
       for (const p of dto.printers) {
-        console.log(`[SYNC] Printer ${p.ipAddress}: macAddress=${p.macAddress}, model=${p.model}, serial=${p.serialNumber}`);
+        console.log(`[SYNC] Printer ${p.ipAddress}: hostname=${p.hostname}, name=${p.name}, macAddress=${p.macAddress}, model=${p.model}`);
         const matchConditions: any[] = [];
         if (p.serialNumber) matchConditions.push({ serialNumber: p.serialNumber });
         if (p.ipAddress) matchConditions.push({ ipAddress: p.ipAddress });
@@ -160,9 +160,7 @@ export class AgentsService {
           clientId,
           agentId,
           isActive: hasModel,
-          name: p.name || p.hostname || p.ipAddress,
           ipAddress: p.ipAddress,
-          hostname: p.hostname,
           location: p.location,
           firmwareVersion: p.firmwareVersion,
           status: ((p.status && ['online', 'offline', 'error', 'warning'].includes(p.status)) ? p.status : 'online') as any,
@@ -173,16 +171,21 @@ export class AgentsService {
           discoveryMethod: 'snmp',
         };
         if (p.macAddress) printerData.macAddress = p.macAddress;
+        if (p.hostname && p.hostname.trim() !== '') printerData.hostname = p.hostname;
         if (p.manufacturer) printerData.manufacturer = p.manufacturer;
         if (p.model) printerData.model = p.model;
         if (p.serialNumber) printerData.serialNumber = p.serialNumber;
 
         if (existing) {
+          if (p.name && !p.name.startsWith('Printer-') && (!existing.name || existing.name.startsWith('Printer-'))) {
+            printerData.name = p.name;
+          }
           await this.prisma.printer.update({
             where: { id: existing.id },
             data: printerData,
           });
         } else {
+          printerData.name = p.name || p.hostname || p.ipAddress;
           await this.prisma.printer.create({
             data: {
               ...printerData,
@@ -299,7 +302,7 @@ export class AgentsService {
           },
         });
 
-        if (['offline', 'toner_empty', 'error', 'paper_jam', 'paper_empty', 'door_open', 'printer_offline', 'service_required'].includes(e.eventType)) {
+        if (['offline', 'toner_empty', 'error', 'paper_jam', 'paper_empty', 'door_open', 'printer_offline', 'service_required'].includes(e.eventType) && !e.code?.startsWith('PRT_ALERT_')) {
           await this.prisma.printer.update({
             where: { id: printer.id },
             data: { status: e.eventType === 'printer_offline' ? 'offline' : 'error', statusDetail: e.eventType, lastContactAt: now },
@@ -308,7 +311,7 @@ export class AgentsService {
 
         // Create alert for critical hardware events
         const alertEventTypes = ['paper_jam', 'paper_empty', 'door_open', 'toner_empty', 'service_required'];
-        if (alertEventTypes.includes(e.eventType)) {
+        if (alertEventTypes.includes(e.eventType) && !e.code?.startsWith('PRT_ALERT_')) {
           const existingAlert = await this.prisma.alert.findFirst({
             where: {
               clientId,

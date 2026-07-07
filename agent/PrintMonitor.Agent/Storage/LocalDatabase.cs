@@ -152,9 +152,17 @@ public class LocalDatabase
 
         using var cmd = conn.CreateCommand();
         cmd.CommandText = @"
-            INSERT OR REPLACE INTO discovered_printers 
+            INSERT INTO discovered_printers 
             (ip, hostname, name, manufacturer, model, serial, last_seen, is_active)
-            VALUES (@ip, @hostname, @name, @manufacturer, @model, @serial, @lastSeen, 1)";
+            VALUES (@ip, @hostname, @name, @manufacturer, @model, @serial, @lastSeen, 1)
+            ON CONFLICT(ip) DO UPDATE SET
+                hostname = CASE WHEN excluded.hostname IS NOT NULL AND excluded.hostname != '' THEN excluded.hostname ELSE discovered_printers.hostname END,
+                name = CASE WHEN excluded.name IS NOT NULL AND excluded.name != '' AND excluded.name NOT LIKE 'Printer-%' THEN excluded.name ELSE discovered_printers.name END,
+                manufacturer = COALESCE(excluded.manufacturer, discovered_printers.manufacturer),
+                model = COALESCE(excluded.model, discovered_printers.model),
+                serial = COALESCE(excluded.serial, discovered_printers.serial),
+                last_seen = excluded.last_seen,
+                is_active = 1";
         cmd.Parameters.AddWithValue("@ip", ip);
         cmd.Parameters.AddWithValue("@hostname", (object?)printer.Hostname ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@name", (object?)printer.Name ?? DBNull.Value);

@@ -1484,12 +1484,6 @@ public static class SnmpScanner
                 Description = desc,
                 OccurredAt = DateTime.UtcNow,
             });
-
-            if (severity == "critical" && printer.Status != "error")
-            {
-                printer.Status = eventType == "offline" ? "offline" : "error";
-                printer.StatusDetail = eventType;
-            }
         }
     }
 }
